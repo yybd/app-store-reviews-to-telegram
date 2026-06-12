@@ -60,9 +60,10 @@
                 <button id="close-settings-btn" class="close-btn">&times;</button>
             </div>
         <div class="modal-body">
-                <div class="api-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">
+                <div class="api-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; flex-wrap: wrap;">
                     <button type="button" id="tab-public" class="tab-btn active" style="background: none; border: none; padding: 8px 12px; cursor: pointer; font-weight: 500; color: var(--primary-color); border-bottom: 2px solid var(--primary-color);">Public API (RSS)</button>
                     <button type="button" id="tab-private" class="tab-btn" style="background: none; border: none; padding: 8px 12px; cursor: pointer; font-weight: 500; color: var(--text-secondary);">Private API (Connect)</button>
+                    <button type="button" id="tab-telegram" class="tab-btn" style="background: none; border: none; padding: 8px 12px; cursor: pointer; font-weight: 500; color: var(--text-secondary);">Telegram</button>
                 </div>
 
                 <!-- Public API Tab Content -->
@@ -101,26 +102,28 @@
                     </div>
                 </div>
                 
-                <h3 style="margin-top: 24px; margin-bottom: 8px; font-size: 1.1rem; border-bottom: 1px solid var(--card-border); padding-bottom: 8px;">Telegram Settings</h3>
-                <p style="margin-top: 0; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">
-                    Configure Telegram to receive <strong>automatic push notifications</strong> every hour whenever a new review is published.
-                </p>
+                <!-- Telegram Tab Content -->
+                <div id="content-telegram" class="tab-content" style="display: none;">
+                    <p style="margin-top: 0; color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 16px;">
+                        Configure Telegram to receive <strong>automatic push notifications</strong> every hour whenever a new review is published.
+                    </p>
 
-                <div class="form-group">
-                    <label for="telegram-token">Bot Token</label>
-                    <input type="text" id="telegram-token" placeholder="123456:ABC-DEF...">
-                </div>
-                <div class="form-group">
-                    <label for="telegram-chat-id">Chat ID</label>
-                    <input type="text" id="telegram-chat-id" placeholder="123456789">
-                </div>
-                
-                <div class="telegram-instructions">
-                    <strong>💡 How to use the Telegram Bot:</strong><br>
-                    Once connected, you will receive notifications for new reviews automatically.<br><br>
-                    <strong>Interactive Commands:</strong><br>
-                    Send <code>/start</code> or <code>/apps</code> to the bot. It will reply with a list of your apps.<br>
-                    <strong>Click the interactive buttons</strong> attached to the message to instantly load the 5 most recent reviews for any specific app right inside Telegram!
+                    <div class="form-group">
+                        <label for="telegram-token">Bot Token</label>
+                        <input type="text" id="telegram-token" placeholder="123456:ABC-DEF...">
+                    </div>
+                    <div class="form-group">
+                        <label for="telegram-chat-id">Chat ID</label>
+                        <input type="text" id="telegram-chat-id" placeholder="123456789">
+                    </div>
+                    
+                    <div class="telegram-instructions">
+                        <strong>💡 How to use the Telegram Bot:</strong><br>
+                        Once connected, you will receive notifications for new reviews automatically.<br><br>
+                        <strong>Interactive Commands:</strong><br>
+                        Send <code>/start</code> or <code>/apps</code> to the bot. It will reply with a list of your apps.<br>
+                        <strong>Click the interactive buttons</strong> attached to the message to instantly load the 5 most recent reviews for any specific app right inside Telegram!
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">

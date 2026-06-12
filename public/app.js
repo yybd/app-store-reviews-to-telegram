@@ -379,30 +379,32 @@ function setupSettingsModal() {
         const contentPublic = document.getElementById('content-public');
         const contentPrivate = document.getElementById('content-private');
         
+        const tabTelegram = document.getElementById('tab-telegram');
+        const contentTelegram = document.getElementById('content-telegram');
+        
         let currentApiMode = 'public';
 
-        if (tabPublic && tabPrivate) {
-            tabPublic.addEventListener('click', () => {
-                tabPublic.classList.add('active');
-                tabPublic.style.color = 'var(--primary-color)';
-                tabPublic.style.borderBottom = '2px solid var(--primary-color)';
-                tabPrivate.classList.remove('active');
-                tabPrivate.style.color = 'var(--text-secondary)';
-                tabPrivate.style.borderBottom = 'none';
-                contentPublic.style.display = 'block';
-                contentPrivate.style.display = 'none';
-                currentApiMode = 'public';
-            });
-            tabPrivate.addEventListener('click', () => {
-                tabPrivate.classList.add('active');
-                tabPrivate.style.color = 'var(--primary-color)';
-                tabPrivate.style.borderBottom = '2px solid var(--primary-color)';
-                tabPublic.classList.remove('active');
-                tabPublic.style.color = 'var(--text-secondary)';
-                tabPublic.style.borderBottom = 'none';
-                contentPrivate.style.display = 'block';
-                contentPublic.style.display = 'none';
-                currentApiMode = 'private';
+        if (tabPublic && tabPrivate && tabTelegram) {
+            const tabs = [
+                { btn: tabPublic, content: contentPublic, mode: 'public' },
+                { btn: tabPrivate, content: contentPrivate, mode: 'private' },
+                { btn: tabTelegram, content: contentTelegram, mode: null }
+            ];
+
+            tabs.forEach(tab => {
+                tab.btn.addEventListener('click', () => {
+                    tabs.forEach(t => {
+                        t.btn.classList.remove('active');
+                        t.btn.style.color = 'var(--text-secondary)';
+                        t.btn.style.borderBottom = 'none';
+                        t.content.style.display = 'none';
+                    });
+                    tab.btn.classList.add('active');
+                    tab.btn.style.color = 'var(--primary-color)';
+                    tab.btn.style.borderBottom = '2px solid var(--primary-color)';
+                    tab.content.style.display = 'block';
+                    if (tab.mode !== null) currentApiMode = tab.mode;
+                });
             });
         }
         

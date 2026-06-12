@@ -102,7 +102,23 @@ app.post('/api/settings', async (req, res) => {
           const chunked = body.match(/.{1,64}/g)?.join('\n') || body;
           normalizedKey = `-----BEGIN PRIVATE KEY-----\n${chunked}\n-----END PRIVATE KEY-----`;
       }
+      
+      if (apiMode === 'private') {
+          const { testAscCredentials } = require('./scraper');
+          const testResult = await testAscCredentials(ascIssuerId, ascKeyId, normalizedKey);
+          if (!testResult.valid) {
+              return res.status(400).json({ success: false, error: testResult.error });
+          }
+      }
+      
       await db.setSetting('asc_private_key', normalizedKey);
+    } else if (apiMode === 'private' && ascPrivateKey === '***HIDDEN***') {
+        const { testAscCredentials } = require('./scraper');
+        const currentKey = await db.getSetting('asc_private_key');
+        const testResult = await testAscCredentials(ascIssuerId, ascKeyId, currentKey);
+        if (!testResult.valid) {
+            return res.status(400).json({ success: false, error: testResult.error });
+        }
     }
     
     // Re-initialize bot only if telegram credentials changed

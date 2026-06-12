@@ -34,6 +34,31 @@ async function generateAscToken() {
     }
 }
 
+async function testAscCredentials(issuerId, keyId, privateKey) {
+    try {
+        const payload = {
+            iss: issuerId,
+            exp: Math.floor(Date.now() / 1000) + 2 * 60,
+            aud: "appstoreconnect-v1"
+        };
+        const token = jwt.sign(payload, privateKey, { algorithm: 'ES256', keyid: keyId });
+        
+        const response = await fetch('https://api.appstoreconnect.apple.com/v1/apps?limit=1', {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (response.status === 401) {
+            return { valid: false, error: 'Unauthorized: Invalid Key ID, Issuer ID, or Private Key' };
+        } else if (!response.ok) {
+            return { valid: false, error: `Apple API Error: ${response.status} ${response.statusText}` };
+        }
+        
+        return { valid: true };
+    } catch (e) {
+        return { valid: false, error: e.message || 'Invalid Private Key format' };
+    }
+}
+
 async function fetchDeveloperAppsPrivate() {
     const token = await generateAscToken();
     if (!token) return [];
@@ -301,4 +326,4 @@ async function scrapeReviews(isInitial = false) {
   }
 }
 
-module.exports = { scrapeReviews, fetchDeveloperApps };
+module.exports = { scrapeReviews, fetchDeveloperApps, testAscCredentials };
