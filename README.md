@@ -1,4 +1,4 @@
-# Apple App Store Reviews Action & Telegram Bot
+# App Store (Apple) Reviews Action & Telegram Bot
 
 This project is a complete **Web Dashboard and Telegram Bot** designed to track Mac/iOS App Store reviews for a specific developer. It automatically scrapes Apple's servers for your apps, stores reviews in a local database (SQLite), provides a beautiful Web Dashboard, and keeps you updated via Telegram notifications.
 
