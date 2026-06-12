@@ -150,7 +150,8 @@ const sendSummaryMessage = async (apps) => {
       const totalCount = app.ratingsByCountry.reduce((sum, r) => sum + r.count, 0);
       const totalRatingPoints = app.ratingsByCountry.reduce((sum, r) => sum + (r.rating * r.count), 0);
       const avgRating = totalCount > 0 ? (totalRatingPoints / totalCount).toFixed(1) : '0.0';
-      message += `*${app.name}*\nRating: ${avgRating}/5 (${totalCount} reviews)\n\n`;
+      const unpublishedTag = app.isPublished === false ? ' [Not in Store]' : '';
+      message += `*${app.name}*${unpublishedTag}\nRating: ${avgRating}/5 (${totalCount} reviews)\n\n`;
       keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
     });
   }

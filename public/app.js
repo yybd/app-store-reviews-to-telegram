@@ -122,6 +122,11 @@ async function fetchApps() {
         apps.forEach((app, index) => {
             const card = document.createElement('div');
             card.className = 'app-card fade-in';
+            if (app.isPublished === false) {
+                card.style.opacity = '0.65';
+                card.style.filter = 'grayscale(0.6)';
+                card.style.backgroundColor = 'var(--bg-primary)';
+            }
             card.style.animationDelay = `${index * 50}ms`;
             
             let statsHtml = '';
