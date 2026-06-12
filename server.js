@@ -118,34 +118,41 @@ app.get('/api/apps', async (req, res) => {
   try {
     const apps = await fetchDeveloperApps();
     
-    // Augment with actual review counts from our database
-    db.all('SELECT app_id, country, COUNT(*) as actual_count FROM reviews GROUP BY app_id, country', (err, rows) => {
+    // Augment with actual review counts and ratings from our database
+    db.all('SELECT app_id, country, COUNT(*) as actual_count, AVG(rating) as actual_rating FROM reviews GROUP BY app_id, country', (err, rows) => {
       if (err) {
         return res.json(apps);
       }
       
-      const countsMap = {};
+      const dbMap = {};
       rows.forEach(row => {
-        if (!countsMap[row.app_id]) countsMap[row.app_id] = {};
-        countsMap[row.app_id][row.country] = row.actual_count;
+        if (!dbMap[row.app_id]) dbMap[row.app_id] = {};
+        dbMap[row.app_id][row.country] = { count: row.actual_count, rating: row.actual_rating };
       });
 
       apps.forEach(app => {
-        const dbCounts = countsMap[app.id] || {};
+        const dbData = dbMap[app.id] || {};
         
         // Update existing countries
         app.ratingsByCountry.forEach(r => {
-           const dbCount = dbCounts[r.country] || 0;
-           r.count = Math.max(r.count, dbCount);
-           delete dbCounts[r.country]; // Mark as processed
+           const dbInfo = dbData[r.country];
+           if (dbInfo) {
+               // If our DB has more reviews than the API reports (e.g. API says 0),
+               // OR if API rating is 0, use our DB as the single source of truth for both count and rating
+               if (dbInfo.count >= r.count || r.rating === 0) {
+                   r.count = dbInfo.count;
+                   r.rating = dbInfo.rating;
+               }
+           }
+           delete dbData[r.country]; // Mark as processed
         });
         
         // Add remaining countries from DB that iTunes Search API missed
-        Object.keys(dbCounts).forEach(country => {
+        Object.keys(dbData).forEach(country => {
             app.ratingsByCountry.push({
                 country: country,
-                rating: 0, // We don't have the average rating from API
-                count: dbCounts[country]
+                rating: dbData[country].rating,
+                count: dbData[country].count
             });
         });
       });
