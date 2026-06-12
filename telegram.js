@@ -125,11 +125,9 @@ const sendReviewNotification = async (review, appName, iconUrl, countryCode) => 
     if (iconUrl) {
       options.link_preview_options = {
         url: iconUrl,
-        prefer_small_media: true
+        prefer_small_media: true,
+        show_above_text: true
       };
-      
-      // Add an invisible link to the message so older clients also render the preview
-      message += `\n[​](${iconUrl})`;
     }
     
     await bot.sendMessage(activeChatId, message, options);
@@ -148,18 +146,13 @@ const sendSummaryMessage = async (apps) => {
   if (apps.length === 0) {
     message += `No apps found.`;
   } else {
-    const MAX_APPS = 10;
-    const displayApps = apps.slice(0, MAX_APPS);
-    
-    displayApps.forEach(app => {
-      message += `*${app.name}*\nRating: ${app.rating.toFixed(1)}/5 (${app.ratingCount} reviews)\n\n`;
+    apps.forEach(app => {
+      const totalCount = app.ratingsByCountry.reduce((sum, r) => sum + r.count, 0);
+      const totalRatingPoints = app.ratingsByCountry.reduce((sum, r) => sum + (r.rating * r.count), 0);
+      const avgRating = totalCount > 0 ? (totalRatingPoints / totalCount).toFixed(1) : '0.0';
+      message += `*${app.name}*\nRating: ${avgRating}/5 (${totalCount} reviews)\n\n`;
       keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
     });
-    
-    if (apps.length > MAX_APPS) {
-      const remaining = apps.length - MAX_APPS;
-      message += `_...and ${remaining} more apps. View the full list on your web dashboard._`;
-    }
   }
 
   try {

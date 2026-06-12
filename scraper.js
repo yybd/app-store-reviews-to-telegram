@@ -40,7 +40,7 @@ async function fetchDeveloperApps() {
                         appsMap.set(id, {
                             id: id,
                             name: app.trackName,
-                            iconUrl: app.artworkUrl512 || app.artworkUrl100 || '',
+                            iconUrl: app.artworkUrl100 || app.artworkUrl60 || app.artworkUrl512 || '',
                             platforms: [platformStr],
                             ratingsByCountry: []
                         });
