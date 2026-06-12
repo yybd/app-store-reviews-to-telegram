@@ -6,8 +6,8 @@ const chatId = process.env.TELEGRAM_CHAT_ID;
 let bot = null;
 
 if (token && chatId) {
-  bot = new TelegramBot(token, { polling: false });
-  console.log('Telegram bot configured.');
+  bot = new TelegramBot(token, { polling: true });
+  console.log('Telegram bot configured with polling.');
 } else {
   console.log('Telegram bot token or chat ID not provided. Telegram notifications disabled.');
 }
@@ -59,4 +59,4 @@ const sendSummaryMessage = async (apps) => {
   }
 };
 
-module.exports = { sendReviewNotification, sendSummaryMessage };
+module.exports = { bot, sendReviewNotification, sendSummaryMessage };
