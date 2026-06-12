@@ -89,10 +89,26 @@ async function fetchConfig() {
         if (config.apiMode) activeApiMode = config.apiMode;
 
         const devNameEl = document.getElementById('developer-name-display');
-        if (devNameEl && config.developerName) {
-            devNameEl.textContent = `Tracking feedback for ${config.developerName}'s Apps`;
+        if (devNameEl) {
+            // Reset to the generic title when there's no name, so a stale name from a
+            // previous mode never lingers after switching API modes
+            devNameEl.textContent = config.developerName
+                ? `Tracking feedback for ${config.developerName}'s Apps`
+                : 'Tracking feedback for Your Apps';
         }
-        
+
+        // Reflect the active data source next to the title (Public RSS vs Private API)
+        const modeBadgeEl = document.getElementById('api-mode-badge');
+        if (modeBadgeEl) {
+            const isPrivate = activeApiMode === 'private';
+            modeBadgeEl.textContent = isPrivate ? 'Private API' : 'Public RSS';
+            modeBadgeEl.title = isPrivate
+                ? 'Active data source: App Store Connect (Private API)'
+                : 'Active data source: Apple Public RSS feeds';
+            modeBadgeEl.classList.remove('hidden', 'public', 'private');
+            modeBadgeEl.classList.add(isPrivate ? 'private' : 'public');
+        }
+
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
@@ -487,6 +503,28 @@ setInterval(() => {
     }
 }, 30000);
 
+// Tag whichever of the Public/Private tabs is the *active* (saved) data source, so the
+// user can tell which mode is in effect even while viewing the Telegram/Security tabs.
+// This is separate from the tab-highlight, which only marks the tab being viewed.
+function markActiveModeTab(savedMode) {
+    const active = savedMode === 'private' ? 'private' : 'public';
+    ['public', 'private'].forEach(m => {
+        const btn = document.getElementById(`tab-${m}`);
+        if (!btn) return;
+        let badge = btn.querySelector('.active-mode-badge');
+        if (m === active) {
+            if (!badge) {
+                badge = document.createElement('span');
+                badge.className = 'active-mode-badge';
+                badge.textContent = 'Active';
+                btn.appendChild(badge);
+            }
+        } else if (badge) {
+            badge.remove();
+        }
+    });
+}
+
 function setupSettingsModal() {
     const modal = document.getElementById('settings-modal');
     const settingsBtn = document.getElementById('settings-btn');
@@ -644,7 +682,8 @@ function setupSettingsModal() {
                 const tabPublic = document.getElementById('tab-public');
                 if (tabPublic) tabPublic.click();
             }
-            
+            markActiveModeTab(data.apiMode);
+
             if (container) {
                 container.innerHTML = '';
                 if (data.storeCountries && data.storeCountries.length > 0) {
@@ -728,7 +767,9 @@ function setupSettingsModal() {
                 fetchConfig();
                 // Trigger fetchApps to update grid if developer name changed
                 fetchApps();
-                
+                // The just-saved mode is now the active one — move the "Active" tag
+                markActiveModeTab(currentApiMode);
+
                 setTimeout(() => {
                     modal.classList.add('hidden');
                     if (statusEl) statusEl.textContent = '';

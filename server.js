@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
-const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, testAscCredentials, scraperEvents } = require('./scraper');
+const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, testAscCredentials, scraperEvents } = require('./scraper');
 const { initBot, isBotConnected } = require('./telegram');
 
 const app = express();
@@ -142,10 +142,9 @@ app.get('/health', (req, res) => {
 app.get('/api/config', async (req, res) => {
   try {
     const apps = await fetchDeveloperApps();
-    let developerName = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM;
-    if (developerName === 'Your Developer Name') {
-      developerName = '';
-    }
+    // Resolve the title's developer name per mode: in Private mode this is the real
+    // Apple publisher name, not the Public-tab "Developer Name" search term.
+    const developerName = await getDeveloperDisplayName(apps);
     const authData = readAuthFile();
     const authEnabled = !!((authData && authData.user && authData.pass) ||
       (process.env.DASHBOARD_USER && process.env.DASHBOARD_PASS));

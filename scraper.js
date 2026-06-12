@@ -162,6 +162,9 @@ async function fetchDeveloperAppsPrivate() {
                             existing.platforms.push(platformStr);
                         }
                         existing.isPublished = true;
+                        // Apple's real publisher name — used as the dashboard title in
+                        // Private mode (where the Public-tab "Developer Name" doesn't apply)
+                        if (app.artistName) existing.artistName = app.artistName;
                     }
                 });
 
@@ -281,6 +284,30 @@ async function fetchDeveloperApps() {
         console.error('Error fetching developer apps:', error);
         return [];
     }
+}
+
+// The developer/publisher name shown in the dashboard title, resolved per mode:
+//  - Public mode: the configured search term — which *is* the developer name the user typed.
+//  - Private mode: the real publisher name Apple reports (artistName from the iTunes lookup),
+//    because the Public-tab "Developer Name" field isn't used to fetch apps here and would be
+//    a misleading leftover. Falls back to the configured name, then '' (generic title).
+// Pass an already-fetched apps array to avoid a duplicate fetch.
+async function getDeveloperDisplayName(appsList) {
+    const apiMode = await db.getSetting('api_mode') || 'public';
+    let configured = (await db.getSetting('developer_name') || process.env.DEVELOPER_TERM || '').trim();
+    if (configured === 'Your Developer Name') configured = '';
+
+    if (apiMode === 'private') {
+        const apps = appsList || await fetchDeveloperApps();
+        const counts = {};
+        for (const a of apps) {
+            if (a && a.artistName) counts[a.artistName] = (counts[a.artistName] || 0) + 1;
+        }
+        // Most common publisher name across the apps (handles the typical single-publisher account)
+        const derived = Object.entries(counts).sort((a, b) => b[1] - a[1])[0]?.[0];
+        return derived || configured;
+    }
+    return configured;
 }
 
 async function fetchDeveloperAppsPublic(devTerm, storeCountries) {
@@ -470,4 +497,4 @@ async function doScrape(isInitial) {
     }
 }
 
-module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, fetchAppReviews, testAscCredentials, scraperEvents };
+module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, fetchAppReviews, testAscCredentials, scraperEvents };
