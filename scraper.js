@@ -24,7 +24,7 @@ async function fetchDeveloperApps() {
     });
     
     return filteredResults.map(app => ({
-      id: app.trackId,
+      id: app.trackId.toString(),
       name: app.trackName,
       rating: app.averageUserRating || 0,
       ratingCount: app.userRatingCount || 0,
