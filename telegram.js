@@ -127,17 +127,24 @@ const sendSummaryMessage = async (apps) => {
   if (!bot || !activeChatId) return false;
 
   let message = `*Apps Rating Summary*\n\n`;
+  const keyboard = [];
   
   if (apps.length === 0) {
     message += `No apps found.`;
   } else {
     apps.forEach(app => {
       message += `*${app.name}*\nRating: ${app.rating.toFixed(1)}/5 (${app.ratingCount} reviews)\n\n`;
+      keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
     });
   }
 
   try {
-    await bot.sendMessage(activeChatId, message, { parse_mode: 'Markdown' });
+    await bot.sendMessage(activeChatId, message, { 
+        parse_mode: 'Markdown',
+        reply_markup: {
+            inline_keyboard: keyboard
+        }
+    });
     console.log('Sent Telegram summary notification.');
     return true;
   } catch (error) {

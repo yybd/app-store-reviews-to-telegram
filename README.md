@@ -1,78 +1,62 @@
-# Store Reviews Action
+# Store Reviews Action & Telegram Bot
 
-This project scrapes reviews for Mac App Store apps for a specific developer, saves them to a database (SQLite), and sends Telegram notifications for new reviews. Additionally, it provides an API and a simple web server to view the reviews.
+This project is a complete **Web Dashboard and Telegram Bot** designed to track Mac App Store reviews for a specific developer. It automatically scrapes Apple's servers for your apps, stores reviews in a local database (SQLite), provides a beautiful Web Dashboard, and keeps you updated via Telegram notifications.
 
-## Core Features
+## 🚀 Telegram Integration (Core Feature)
 
-### `scraper.js` (Scraping Engine)
-* **`fetchDeveloperApps()`**: Fetches all apps of the configured developer from the iTunes API.
-* **`fetchAppReviews(appId)`**: Fetches the latest reviews for a specific app from the iTunes RSS feed.
-* **`scrapeReviews()`**: The main loop running in the background. It fetches all apps, checks for new reviews on each, saves new reviews to the database, and sends Telegram notifications if a new review is found.
+One of the main strengths of this system is its deep Telegram integration, allowing you to stay connected to your user feedback from anywhere. 
 
-### `telegram.js` (Telegram Integration)
-* **`sendReviewNotification(review, appName)`**: Sends a Telegram notification for a specific new review, including rating (stars), author name, version, and review content.
-* **`sendSummaryMessage(apps)`**: Sends a summary message to Telegram listing all developer apps, their average rating, and total review count.
+There are two distinct types of Telegram interactions:
 
-### `server.js` (Express Server & Telegram Bot)
-* **`GET /health`**: Server health check endpoint.
-* **`POST /api/send-apps-summary`**: API endpoint to manually trigger a status summary sent to Telegram.
-* **`GET /api/reviews`**: API endpoint returning all reviews saved in the database, ordered from newest to oldest.
-* Runs `scrapeReviews()` periodically based on the configured interval (default: every 15 minutes).
-* Listens to Telegram bot commands and button interactions (see Telegram instructions below).
+### 1. 🔔 Automated Push Notifications (Active)
+The system runs silently in the background, checking the App Store at regular intervals (default: every hour). 
+- Whenever a **brand new review** is published for any of your apps, the bot will automatically send a **push notification** directly to your Telegram chat.
+- The notification includes the app's official icon, the star rating, the author's name, the app version, and the full text of the review.
+- You do not need to do anything to trigger this; it happens entirely automatically.
 
-## Local Setup Instructions
+### 2. 📊 On-Demand Summaries (Manual)
+If you want to quickly check the current status of your apps without waiting for a new review, you can manually request a summary:
+- **How to trigger**: Click the "Send Summary" button on the Web Dashboard, or simply type `/apps` in your Telegram chat with the bot.
+- **What you get**: The bot will reply with a clean summary listing all your apps, their average ratings, and total review counts.
+- **Interactive Buttons**: Below the summary, the bot attaches inline buttons for each app. Clicking an app's button will instantly reply with its **last 5 reviews**.
 
-To run the project locally, follow these steps:
+---
 
-1. **Install Dependencies**: Open your terminal in the project folder and run:
+## 💻 Web Dashboard
+
+The project includes a sleek, modern web interface accessible from your browser (e.g., `http://localhost:3000`).
+- **Apps Grid**: Displays a card for each of your apps, showing its icon, name, average rating, and total review count.
+- **Reviews Modal**: Click on any app to open a scrollable window containing all its saved reviews.
+- **In-Browser Settings**: A built-in Settings modal allows you to configure your Developer Name, Telegram Bot Token, and Telegram Chat ID directly from the UI—no need to mess with `.env` files once the server is running.
+
+---
+
+## 🛠 Setup Instructions
+
+### 1. Install & Run
+1. Open your terminal in the project folder and install dependencies:
    ```bash
    npm install
    ```
-
-2. **Configure Environment Variables**: Make sure to create a `.env` file in the root folder according to the "Environment Settings (.env)" section below. (This is crucial for the Telegram token, but the server will run without Telegram and print a message that notifications are disabled).
-
-3. **Start the Server**: Run the following command:
+2. Start the server:
    ```bash
    npm start
    ```
+3. Open your browser and navigate to `http://localhost:3000`.
 
-4. **Verify Deployment & API**: The server runs on port 3000 by default (or the port defined in your `.env`).
-   * Access the local web interface: `http://localhost:3000`
-   * Access the reviews API in JSON format: `http://localhost:3000/api/reviews`
+### 2. Configure Settings (via Web UI)
+1. In the Web Dashboard, click the **Settings** button at the top right.
+2. **Developer Name**: Enter your exact App Store developer name (this is used to search for your apps).
+3. **Telegram Configuration**:
+   - Create a bot via **@BotFather** on Telegram to get your **Bot Token**.
+   - Use a bot like **@userinfobot** to find your numeric **Chat ID**.
+   - Enter both into the settings window and click "Save".
 
-## Telegram Setup Guide
+*(Note: The system saves these settings persistently in a local database. You only need to configure them once).*
 
-To receive notifications and interact with the system via Telegram, set up your bot as follows:
+## Technical Overview
 
-### 1. Create a Telegram Bot
-1. Search for **BotFather** (`@BotFather`) on Telegram.
-2. Send the `/newbot` command and follow the instructions to choose a name and username.
-3. BotFather will provide a **Token**. Save it; this is your `TELEGRAM_BOT_TOKEN`.
-
-### 2. Retrieve Your Chat ID
-To let the bot know where to send messages, you need your Chat ID (or the ID of a group containing the bot):
-1. Start a chat with your bot (click Start or send a message).
-2. Search Telegram for helper bots like `@userinfobot` or `@getmyid_bot` to find your user ID (a numeric value). This is your `TELEGRAM_CHAT_ID`.
-
-### 3. Environment Settings (.env)
-Create or edit a file named `.env` in the root folder of the project, and add the following configuration (replace with your actual values):
-
-```env
-TELEGRAM_BOT_TOKEN=your_telegram_bot_token
-TELEGRAM_CHAT_ID=your_telegram_chat_id
-
-# Additional settings (optional):
-# STORE_COUNTRY=us
-# DEVELOPER_TERM=First Last Name
-# PORT=3000
-# POLL_INTERVAL_MINUTES=15
-```
-
-### 4. Interactive Features & Commands
-Once the server is running with the correct configuration:
-* **Automated Notifications**: The bot will automatically message you when a new review is posted.
-* **Bot Commands**:
-  - Send the `/start` or `/apps` command to the bot.
-  - The bot will reply with a summary message containing all your apps and their average ratings.
-  - Interactive buttons will appear below the message. Clicking a button retrieves the **last 5 reviews** saved in the database for that app.
-
+- **`scraper.js`**: Connects to the iTunes Search API and RSS feeds to fetch apps, ratings, and reviews. Filters results strictly to ensure only your apps are tracked.
+- **`telegram.js`**: Manages the Telegram bot lifecycle, polling, inline keyboards, and automated photo/text messages.
+- **`db.js`**: Handles the local SQLite database (`data/reviews.sqlite`), storing persistent settings and preventing duplicate reviews.
+- **`server.js`**: The Express server that orchestrates the backend, serves the frontend UI, and runs the background scraping loops.
