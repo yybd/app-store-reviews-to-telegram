@@ -11,6 +11,11 @@ const POLL_INTERVAL_MINUTES = parseInt(process.env.POLL_INTERVAL_MINUTES || '15'
 // Serve static files from 'public' directory
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Health check endpoint for Coolify
+app.get('/health', (req, res) => {
+  res.status(200).send('OK');
+});
+
 // API endpoint to get all reviews, sorted by newest
 app.get('/api/reviews', (req, res) => {
   db.all('SELECT * FROM reviews ORDER BY updated_at DESC', [], (err, rows) => {

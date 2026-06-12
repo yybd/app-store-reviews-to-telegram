@@ -1,13 +1,13 @@
 :root {
-    --bg-color: #050505;
-    --text-primary: #ffffff;
-    --text-secondary: #a0a0a0;
-    --card-bg: rgba(255, 255, 255, 0.03);
-    --card-border: rgba(255, 255, 255, 0.08);
-    --card-hover-border: rgba(255, 255, 255, 0.2);
-    --accent: #5e6ad2;
-    --accent-glow: rgba(94, 106, 210, 0.5);
-    --star-color: #ffb800;
+    --bg-color: #f8fafc;
+    --text-primary: #0f172a;
+    --text-secondary: #475569;
+    --card-bg: rgba(255, 255, 255, 0.7);
+    --card-border: rgba(0, 0, 0, 0.05);
+    --card-hover-border: rgba(0, 0, 0, 0.15);
+    --accent: #4f46e5;
+    --accent-glow: rgba(79, 70, 229, 0.3);
+    --star-color: #f59e0b;
 }
 
 * {
@@ -87,7 +87,7 @@ header {
     font-weight: 700;
     letter-spacing: -0.03em;
     margin-bottom: 8px;
-    background: linear-gradient(135deg, #fff 0%, #a0a0a0 100%);
+    background: linear-gradient(135deg, #1e293b 0%, #64748b 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
 }
@@ -109,7 +109,7 @@ header {
     border-radius: 16px;
     backdrop-filter: blur(12px);
     text-align: center;
-    box-shadow: 0 4px 24px rgba(0,0,0,0.2);
+    box-shadow: 0 4px 24px rgba(0,0,0,0.03);
 }
 
 .stat-label {
@@ -210,7 +210,7 @@ header {
 .review-card:hover {
     transform: translateY(-4px);
     border-color: var(--card-hover-border);
-    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255,255,255,0.05);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0,0,0,0.02);
 }
 
 .review-card:hover::before {
@@ -261,12 +261,12 @@ header {
 
 .review-author {
     font-weight: 500;
-    color: #e0e0e0;
+    color: #334155;
 }
 
 .review-version {
     color: var(--text-secondary);
-    background: rgba(255,255,255,0.05);
+    background: rgba(0,0,0,0.05);
     padding: 4px 8px;
     border-radius: 6px;
 }
