@@ -2,12 +2,13 @@ const db = require('./db');
 const { sendReviewNotification } = require('./telegram');
 
 const STORE_COUNTRY = process.env.STORE_COUNTRY || 'us';
-const DEVELOPER_TERM = process.env.DEVELOPER_TERM || 'Yechiel+Ben+David';
+const DEVELOPER_TERM = process.env.DEVELOPER_TERM || 'Your Developer Name';
 
 // Fetch all Mac apps for the developer
 async function fetchDeveloperApps() {
   try {
-    const url = `https://itunes.apple.com/search?term=${encodeURIComponent(DEVELOPER_TERM)}&entity=macSoftware`;
+    const encodedTerm = encodeURIComponent(DEVELOPER_TERM.trim()).replace(/%20/g, '+');
+    const url = `https://itunes.apple.com/search?term=${encodedTerm}&entity=macSoftware`;
     const response = await fetch(url);
     const data = await response.json();
     
