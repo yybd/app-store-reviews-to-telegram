@@ -40,11 +40,11 @@ const basicAuth = (req, res, next) => {
     return next();
   }
 
-  res.set('WWW-Authenticate', 'Basic realm="Store Reviews Dashboard"');
-  res.status(401).send('Authentication required. Please enter your configured username and password.');
+  res.status(401).json({ error: 'Authentication required', auth: true });
 };
 
-app.use(basicAuth);
+// Mount API routes with auth
+app.use('/api', basicAuth);
 
 const PORT = process.env.PORT || 3000;
 const POLL_INTERVAL_MINUTES = parseInt(process.env.POLL_INTERVAL_MINUTES || '15', 10);

@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function fetchConfig() {
     try {
-        const response = await fetch('/api/config', { cache: 'no-cache' });
+        const response = await customFetch('/api/config', { cache: 'no-cache' });
         const config = await response.json();
         
         const devNameEl = document.getElementById('developer-name-display');
@@ -71,7 +71,7 @@ function setupTestButton() {
         testBtn.style.opacity = '0.7';
         
         try {
-            const res = await fetch('/api/send-apps-summary', { method: 'POST' });
+            const res = await customFetch('/api/send-apps-summary', { method: 'POST' });
             if (res.ok) {
                 testBtn.textContent = 'Sent!';
             } else {
@@ -96,7 +96,7 @@ async function fetchApps() {
     const totalReviewsEl = document.getElementById('total-reviews');
 
     try {
-        const response = await fetch('/api/apps', { cache: 'no-cache' });
+        const response = await customFetch('/api/apps', { cache: 'no-cache' });
         if (!response.ok) throw new Error('Failed to fetch apps');
         
         const apps = await response.json();
@@ -377,6 +377,69 @@ function setupSettingsModal() {
 
     let currentApiMode = 'public';
 
+// Setup Auth and fetch wrapper
+let authHeader = localStorage.getItem('storeReviewsAuth') || null;
+
+async function customFetch(url, options = {}) {
+    const headers = options.headers || {};
+    if (authHeader) {
+        headers['Authorization'] = authHeader;
+    }
+    options.headers = headers;
+    
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+        const modal = document.getElementById('login-modal');
+        if (modal) modal.classList.remove('hidden');
+        throw new Error('Authentication required');
+    }
+    return res;
+}
+
+// Handle Login UI
+document.addEventListener('DOMContentLoaded', () => {
+    const loginBtn = document.getElementById('login-btn');
+    const loginError = document.getElementById('login-error');
+    if (loginBtn) {
+        loginBtn.addEventListener('click', async () => {
+            const user = document.getElementById('login-user').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
+            if (!user || !pass) {
+                loginError.textContent = 'Please enter both username and password';
+                return;
+            }
+            
+            loginBtn.textContent = 'Logging in...';
+            const encoded = btoa(user + ':' + pass);
+            const tempAuth = 'Basic ' + encoded;
+            
+            try {
+                // Test auth by hitting config
+                const res = await fetch('/api/config', {
+                    headers: { 'Authorization': tempAuth }
+                });
+                if (res.status === 401) {
+                    throw new Error('Invalid credentials');
+                }
+                
+                // Success
+                authHeader = tempAuth;
+                localStorage.setItem('storeReviewsAuth', tempAuth);
+                document.getElementById('login-modal').classList.add('hidden');
+                loginError.textContent = '';
+                
+                // Reload data
+                fetchConfig();
+                fetchApps();
+            } catch (e) {
+                loginError.textContent = 'Invalid username or password';
+            } finally {
+                loginBtn.textContent = 'Login';
+            }
+        });
+    }
+});
+
     settingsBtn.addEventListener('click', async () => {
         if (statusEl) {
             statusEl.textContent = 'Loading...';
@@ -420,7 +483,7 @@ function setupSettingsModal() {
         });
         
         try {
-            const res = await fetch('/api/settings', { cache: 'no-cache' });
+            const res = await customFetch('/api/settings', { cache: 'no-cache' });
             const data = await res.json();
             if (tokenInput) tokenInput.value = data.telegramToken || '';
             if (chatIdInput) chatIdInput.value = data.telegramChatId || '';
@@ -513,7 +576,7 @@ function setupSettingsModal() {
                 dashboardPass: dashboardPassInput ? dashboardPassInput.value.trim() : ''
             };
             
-            const res = await fetch('/api/settings', {
+            const res = await customFetch('/api/settings', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
