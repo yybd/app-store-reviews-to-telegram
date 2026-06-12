@@ -10,7 +10,6 @@ app.use(express.json());
 
 // Basic Auth Middleware
 const fs = require('fs');
-const path = require('path');
 const authFile = path.join(__dirname, 'data', 'auth.json');
 
 const basicAuth = (req, res, next) => {
