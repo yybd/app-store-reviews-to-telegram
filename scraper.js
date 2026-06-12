@@ -1,6 +1,11 @@
 const db = require('./db');
 const { sendReviewNotification } = require('./telegram');
 const jwt = require('jsonwebtoken');
+const { EventEmitter } = require('events');
+
+// Emits 'reviews-updated' whenever a scrape cycle saved new reviews, so the
+// server can push a live refresh to open dashboards (instead of them polling)
+const scraperEvents = new EventEmitter();
 
 // Full ISO 3166-1 alpha-3 -> alpha-2 mapping.
 // App Store Connect reports review territories as alpha-3; iTunes feeds and flag emojis use alpha-2.
@@ -189,6 +194,7 @@ async function scrapeReviewsPrivate(isInitial = false) {
     const token = await generateAscToken();
     if (!token) return;
 
+    let newCount = 0;
     for (const app of apps) {
         try {
             const url = `https://api.appstoreconnect.apple.com/v1/apps/${app.id}/customerReviews?limit=200&sort=-createdDate`;
@@ -219,6 +225,7 @@ async function scrapeReviewsPrivate(isInitial = false) {
                 try {
                     const isNew = await saveReviewIfNew(review, app.id, storeCountry);
                     if (isNew) {
+                        newCount++;
                         console.log(`New review found via Private API: ${review.title}`);
                         if (!isInitial && !notificationsMuted) {
                             await sendReviewNotification(review, app.name, app.iconUrl, storeCountry);
@@ -231,6 +238,9 @@ async function scrapeReviewsPrivate(isInitial = false) {
         } catch (e) {
             console.error(`Error fetching customer reviews for app ${app.id}:`, e);
         }
+    }
+    if (newCount > 0) {
+        scraperEvents.emit('reviews-updated', { count: newCount });
     }
 }
 
@@ -414,6 +424,8 @@ async function resetAndRescrape() {
             .catch(err => console.error('Initial rescrape failed:', err))
             .finally(() => { currentScrape = null; });
         await currentScrape;
+        // The review set was wiped and re-seeded — open dashboards must refresh
+        scraperEvents.emit('reviews-updated', { reset: true });
     } finally {
         notificationsMuted = false;
     }
@@ -431,6 +443,7 @@ async function doScrape(isInitial) {
     const storeCountries = await getStoreCountries();
     console.log(`Found ${apps.length} apps for developer. Using store countries: ${storeCountries.join(', ')}`);
 
+    let newCount = 0;
     for (const app of apps) {
         for (const storeCountry of storeCountries) {
             const reviews = await fetchAppReviews(app.id, storeCountry);
@@ -440,6 +453,7 @@ async function doScrape(isInitial) {
                 try {
                     const isNew = await saveReviewIfNew(review, app.id, storeCountry);
                     if (isNew) {
+                        newCount++;
                         console.log(`New review found for ${app.name} [${storeCountry}]: ${review.title}`);
                         if (!isInitial && !notificationsMuted) {
                             await sendReviewNotification(review, app.name, app.iconUrl, storeCountry);
@@ -451,6 +465,9 @@ async function doScrape(isInitial) {
             }
         }
     }
+    if (newCount > 0) {
+        scraperEvents.emit('reviews-updated', { count: newCount });
+    }
 }
 
-module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, fetchAppReviews, testAscCredentials };
+module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, fetchAppReviews, testAscCredentials, scraperEvents };

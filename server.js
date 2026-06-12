@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
-const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, testAscCredentials } = require('./scraper');
+const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, testAscCredentials, scraperEvents } = require('./scraper');
 const { initBot, isBotConnected } = require('./telegram');
 
 const app = express();
@@ -34,7 +34,10 @@ const basicAuth = (req, res, next) => {
     return next();
   }
 
-  const b64auth = (req.headers.authorization || '').split(' ')[1] || '';
+  // EventSource (the live-updates stream) cannot send headers, so the dashboard
+  // passes the same "Basic <b64>" value via the ?auth= query parameter instead
+  const rawAuth = req.headers.authorization || req.query.auth || '';
+  const b64auth = rawAuth.split(' ')[1] || '';
   const [login, password] = Buffer.from(b64auth, 'base64').toString().split(':');
 
   if (login && password && login === user && password === pass) {
@@ -46,6 +49,41 @@ const basicAuth = (req, res, next) => {
 
 // Mount API routes with auth
 app.use('/api', basicAuth);
+
+// --- Live updates (SSE) ------------------------------------------------------
+// Open dashboards hold a connection here and get pushed a 'refresh' event when
+// the scraper saves new reviews — no client-side polling loop needed.
+const sseClients = new Set();
+
+app.get('/api/events', (req, res) => {
+  res.set({
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'X-Accel-Buffering': 'no' // disable buffering in reverse proxies
+  });
+  res.flushHeaders();
+  res.write('retry: 5000\n\n');
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
+});
+
+const sseSend = (payload) => {
+  const frame = `data: ${JSON.stringify(payload)}\n\n`;
+  for (const client of sseClients) {
+    try {
+      client.write(frame);
+    } catch (e) {
+      sseClients.delete(client);
+    }
+  }
+};
+
+// Heartbeat keeps proxies from killing the idle stream and lets clients detect
+// a silently-dropped connection
+setInterval(() => sseSend({ type: 'ping' }), 25000);
+
+scraperEvents.on('reviews-updated', (info) => sseSend({ type: 'refresh', ...info }));
 
 const PORT = process.env.PORT || 3000;
 

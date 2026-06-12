@@ -23,6 +23,7 @@ async function customFetch(url, options = {}) {
 document.addEventListener('DOMContentLoaded', () => {
     fetchConfig();
     fetchApps();
+    connectEventStream();
     setupTestButton();
     setupSettingsModal();
     setupReviewsModal();
@@ -66,9 +67,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('login-modal').classList.add('hidden');
                 loginError.textContent = '';
                 
-                // Reload data
+                // Reload data and re-open the event stream with the new credentials
                 fetchConfig();
                 fetchApps();
+                connectEventStream();
             } catch (e) {
                 loginError.textContent = 'Invalid username or password';
             } finally {
@@ -394,8 +396,56 @@ function escapeHTML(str) {
         .replace(/'/g, '&#39;');
 }
 
-// Poll for updates every 60 seconds
-setInterval(fetchApps, 60000);
+// --- Live updates -----------------------------------------------------------
+// Instead of polling, listen to the server's event stream (SSE): the server
+// pushes a 'refresh' only when the scraper actually saved new reviews.
+let eventSource = null;
+let lastEventAt = 0;
+
+function connectEventStream() {
+    if (eventSource) {
+        eventSource.close();
+        eventSource = null;
+    }
+    // EventSource can't send headers, so the auth goes in the query string
+    const authParam = authHeader ? ('?auth=' + encodeURIComponent(authHeader)) : '';
+    eventSource = new EventSource('/api/events' + authParam);
+    lastEventAt = Date.now();
+
+    let firstOpen = true;
+    eventSource.onopen = () => {
+        lastEventAt = Date.now();
+        if (!firstOpen) {
+            // Reconnected after a drop — catch up on anything missed meanwhile
+            fetchConfig();
+            fetchApps();
+        }
+        firstOpen = false;
+    };
+
+    eventSource.onmessage = (e) => {
+        lastEventAt = Date.now();
+        try {
+            const msg = JSON.parse(e.data);
+            if (msg.type === 'refresh') {
+                fetchConfig();
+                fetchApps();
+            }
+        } catch (err) {
+            // Ignore malformed frames (e.g. heartbeats are handled by the timestamp above)
+        }
+    };
+}
+
+// Watchdog: the server heartbeats every 25s; if the stream goes silent for 90s
+// (e.g. a proxy dropped it without closing), reconnect and refresh once
+setInterval(() => {
+    if (eventSource && Date.now() - lastEventAt > 90000) {
+        connectEventStream();
+        fetchConfig();
+        fetchApps();
+    }
+}, 30000);
 
 function setupSettingsModal() {
     const modal = document.getElementById('settings-modal');
