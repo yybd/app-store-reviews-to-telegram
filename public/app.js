@@ -119,13 +119,18 @@ async function fetchApps() {
         
         gridEl.innerHTML = '';
         
+        apps.sort((a, b) => {
+            if (a.isPublished !== false && b.isPublished === false) return -1;
+            if (a.isPublished === false && b.isPublished !== false) return 1;
+            return 0;
+        });
+        
         apps.forEach((app, index) => {
             const card = document.createElement('div');
             card.className = 'app-card fade-in';
             if (app.isPublished === false) {
-                card.style.opacity = '0.65';
-                card.style.filter = 'grayscale(0.6)';
-                card.style.backgroundColor = 'var(--bg-primary)';
+                card.style.filter = 'brightness(0.4) grayscale(0.8)';
+                card.style.backgroundColor = 'var(--bg-color)';
             }
             card.style.animationDelay = `${index * 50}ms`;
             
