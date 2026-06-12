@@ -54,12 +54,14 @@
 
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal hidden">
-        <div class="modal-content" style="min-height: 550px;">
+        <!-- Fixed height: the body scrolls when a tab's content overflows,
+             and the modal no longer jumps in size when switching tabs -->
+        <div class="modal-content" style="height: min(640px, 85vh);">
             <div class="modal-header">
                 <h2>Settings</h2>
                 <button id="close-settings-btn" class="close-btn">&times;</button>
             </div>
-        <div class="modal-body">
+        <div class="modal-body" style="flex: 1;">
                 <div class="api-tabs" style="display: flex; gap: 8px; margin-bottom: 16px; border-bottom: 1px solid var(--card-border); padding-bottom: 8px; flex-wrap: wrap;">
                     <button type="button" id="tab-public" class="tab-btn active" style="background: none; border: none; padding: 8px 12px; cursor: pointer; font-weight: 500; color: var(--primary-color); border-bottom: 2px solid var(--primary-color);">Public API (RSS)</button>
                     <button type="button" id="tab-private" class="tab-btn" style="background: none; border: none; padding: 8px 12px; cursor: pointer; font-weight: 500; color: var(--text-secondary);">Private API (Connect)</button>
