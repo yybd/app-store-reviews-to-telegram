@@ -2,6 +2,7 @@ document.addEventListener('DOMContentLoaded', () => {
     fetchConfig();
     fetchReviews();
     setupTestButton();
+    setupSettingsModal();
 });
 
 async function fetchConfig() {
@@ -17,11 +18,31 @@ async function fetchConfig() {
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
+            let statusHtml = '';
+            
             if (config.connected) {
-                statusEl.innerHTML = `<span style="color: #4ade80;">●</span> Connected (${config.appsCount} apps found)`;
+                statusHtml += `<span style="color: #4ade80;" title="App Store Connected">●</span> Store (${config.appsCount} apps)`;
             } else {
-                statusEl.innerHTML = `<span style="color: #ff5e5e;">●</span> Connection failed or no apps found. Check DEVELOPER_TERM.`;
+                statusHtml += `<span style="color: #ff5e5e;" title="App Store Disconnected">●</span> Store (Check DEVELOPER_TERM)`;
             }
+            
+            statusHtml += `<span style="margin: 0 6px; color: #cbd5e1;">|</span>`;
+            
+            if (config.telegramConnected) {
+                statusHtml += `<span style="color: #4ade80;" title="Telegram Connected">●</span> Telegram`;
+            } else {
+                statusHtml += `<span style="color: #ff5e5e;" title="Telegram Disconnected">●</span> Telegram`;
+                
+                const testBtn = document.getElementById('test-telegram-btn');
+                if (testBtn) {
+                    testBtn.disabled = true;
+                    testBtn.style.opacity = '0.5';
+                    testBtn.style.cursor = 'not-allowed';
+                    testBtn.title = 'Telegram is not configured';
+                }
+            }
+            
+            statusEl.innerHTML = statusHtml;
         }
     } catch (error) {
         console.error('Error fetching config:', error);
@@ -138,3 +159,92 @@ function escapeHTML(str) {
 
 // Poll for updates every 60 seconds
 setInterval(fetchReviews, 60000);
+
+function setupSettingsModal() {
+    const modal = document.getElementById('settings-modal');
+    const settingsBtn = document.getElementById('settings-btn');
+    const closeBtn = document.getElementById('close-settings-btn');
+    const saveBtn = document.getElementById('save-settings-btn');
+    const tokenInput = document.getElementById('telegram-token');
+    const chatIdInput = document.getElementById('telegram-chat-id');
+    const developerNameInput = document.getElementById('developer-name');
+    const statusEl = document.getElementById('settings-save-status');
+
+    if (!modal || !settingsBtn) return;
+
+    settingsBtn.addEventListener('click', async () => {
+        if (statusEl) {
+            statusEl.textContent = 'Loading...';
+            statusEl.style.color = 'var(--text-secondary)';
+        }
+        modal.classList.remove('hidden');
+        
+        try {
+            const res = await fetch('/api/settings');
+            const data = await res.json();
+            if (tokenInput) tokenInput.value = data.telegramToken || '';
+            if (chatIdInput) chatIdInput.value = data.telegramChatId || '';
+            if (developerNameInput) developerNameInput.value = data.developerName || '';
+            if (statusEl) statusEl.textContent = '';
+        } catch (e) {
+            if (statusEl) {
+                statusEl.textContent = 'Error loading settings';
+                statusEl.style.color = '#ff5e5e';
+            }
+        }
+    });
+
+    closeBtn.addEventListener('click', () => {
+        modal.classList.add('hidden');
+    });
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.classList.add('hidden');
+        }
+    });
+
+    saveBtn.addEventListener('click', async () => {
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving...';
+        if (statusEl) statusEl.textContent = '';
+        
+        try {
+            const res = await fetch('/api/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    telegramToken: tokenInput ? tokenInput.value.trim() : '',
+                    telegramChatId: chatIdInput ? chatIdInput.value.trim() : '',
+                    developerName: developerNameInput ? developerNameInput.value.trim() : ''
+                })
+            });
+            
+            const data = await res.json();
+            if (data.success) {
+                if (statusEl) {
+                    statusEl.textContent = 'Saved successfully! ✅';
+                    statusEl.style.color = '#4ade80';
+                }
+                fetchConfig();
+                // We should also trigger fetchReviews in case developer name changed
+                fetchReviews();
+                
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                    if (statusEl) statusEl.textContent = '';
+                }, 1500);
+            } else {
+                throw new Error(data.error || 'Failed to save');
+            }
+        } catch (e) {
+            if (statusEl) {
+                statusEl.textContent = e.message;
+                statusEl.style.color = '#ff5e5e';
+            }
+        } finally {
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+        }
+    });
+}

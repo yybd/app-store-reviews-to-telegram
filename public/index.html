@@ -23,6 +23,7 @@
                 <div id="connection-status" class="hidden" style="margin-top: 8px; font-size: 14px; display: flex; align-items: center; gap: 6px;"></div>
             </div>
             <div class="stats">
+                <button id="settings-btn" class="action-btn" style="background-color: var(--text-secondary); margin-right: 8px;">⚙️ Settings</button>
                 <button id="test-telegram-btn" class="action-btn">Send Summary</button>
                 <div class="stat-box">
                     <span class="stat-label">Total Reviews</span>
@@ -49,6 +50,42 @@
                 <p>Wait for the next polling cycle or check your store configuration.</p>
             </div>
         </main>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Telegram Settings</h2>
+                <button id="close-settings-btn" class="close-btn">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="developer-name">Developer Name</label>
+                    <input type="text" id="developer-name" placeholder="e.g. Apple">
+                </div>
+                <div class="form-group">
+                    <label for="telegram-token">Bot Token</label>
+                    <input type="text" id="telegram-token" placeholder="123456:ABC-DEF...">
+                </div>
+                <div class="form-group">
+                    <label for="telegram-chat-id">Chat ID</label>
+                    <input type="text" id="telegram-chat-id" placeholder="123456789">
+                </div>
+                
+                <div class="telegram-instructions">
+                    <strong>💡 How to use the Telegram Bot:</strong><br>
+                    Once connected, you will receive notifications for new reviews automatically.<br><br>
+                    <strong>Interactive Commands:</strong><br>
+                    Send <code>/start</code> or <code>/apps</code> to the bot. It will reply with a list of your apps.<br>
+                    <strong>Click the interactive buttons</strong> attached to the message to instantly load the 5 most recent reviews for any specific app right inside Telegram!
+                </div>
+            </div>
+            <div class="modal-footer">
+                <span id="settings-save-status"></span>
+                <button id="save-settings-btn" class="action-btn">Save</button>
+            </div>
+        </div>
     </div>
 
     <script src="app.js"></script>

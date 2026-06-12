@@ -23,7 +23,33 @@ const db = new sqlite3.Database(path.join(DB_DIR, 'reviews.sqlite'), (err) => {
       content TEXT,
       updated_at TEXT
     )`);
+    db.run(`CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT
+    )`);
   }
 });
+
+db.getSetting = (key) => {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT value FROM settings WHERE key = ?', [key], (err, row) => {
+      if (err) reject(err);
+      else resolve(row ? row.value : null);
+    });
+  });
+};
+
+db.setSetting = (key, value) => {
+  return new Promise((resolve, reject) => {
+    db.run(
+      'INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = ?',
+      [key, value, value],
+      (err) => {
+        if (err) reject(err);
+        else resolve();
+      }
+    );
+  });
+};
 
 module.exports = db;
