@@ -28,6 +28,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const loginBtn = document.getElementById('login-btn');
     const loginError = document.getElementById('login-error');
     if (loginBtn) {
+        // Allow submitting the login form with Enter
+        ['login-user', 'login-pass'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') loginBtn.click();
+            });
+        });
+
         loginBtn.addEventListener('click', async () => {
             const user = document.getElementById('login-user').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
@@ -225,7 +233,7 @@ async function fetchApps() {
             
             card.innerHTML = `
                 <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 12px;">
-                    ${app.iconUrl ? `<img src="${app.iconUrl}" alt="${escapeHTML(app.name)} icon" style="width: 56px; height: 56px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">` : ''}
+                    ${app.iconUrl ? `<img src="${escapeHTML(app.iconUrl)}" alt="${escapeHTML(app.name)} icon" style="width: 56px; height: 56px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">` : ''}
                     <div>
                         <h3 style="margin: 0;">${escapeHTML(app.name)}${unpublishedTag}</h3>
                         ${platformsHtml}
@@ -234,7 +242,7 @@ async function fetchApps() {
                 <div style="margin-bottom: 12px; border-top: 1px solid var(--card-border); padding-top: 8px;">
                     ${statsHtml}
                 </div>
-                <button class="view-reviews-btn" data-id="${app.id}" data-name="${escapeHTML(app.name)}">View Reviews</button>
+                <button class="view-reviews-btn" data-id="${escapeHTML(app.id)}" data-name="${escapeHTML(app.name)}">View Reviews</button>
             `;
             
             gridEl.appendChild(card);
@@ -250,6 +258,9 @@ async function fetchApps() {
 
     } catch (error) {
         console.error('Error fetching apps:', error);
+        // When auth is required the login modal is already shown; the post-login
+        // flow re-fetches, so don't spam the server with retries
+        if (error.message === 'Authentication required') return;
         loadingEl.innerHTML = `<p style="color: #ff5e5e;">Error loading apps. Retrying soon...</p>`;
         setTimeout(fetchApps, 10000);
     }
@@ -356,12 +367,16 @@ function createReviewCard(review) {
     return card;
 }
 
-// Basic HTML escaping to prevent XSS
+// Basic HTML escaping to prevent XSS — escapes quotes too, so it is safe
+// inside attribute values (src, alt, data-*), not just element content
 function escapeHTML(str) {
-    if (!str) return '';
-    const div = document.createElement('div');
-    div.textContent = str;
-    return div.innerHTML;
+    if (str === null || str === undefined) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 }
 
 // Poll for updates every 60 seconds
@@ -450,6 +465,32 @@ function setupSettingsModal() {
 
     let currentApiMode = 'public';
 
+    // Register tab listeners once (not on every modal open, which stacked duplicates)
+    const tabs = ['public', 'private', 'telegram', 'security'];
+    tabs.forEach(tab => {
+        const btn = document.getElementById(`tab-${tab}`);
+        if (!btn) return;
+        btn.addEventListener('click', () => {
+            tabs.forEach(t => {
+                const tBtn = document.getElementById(`tab-${t}`);
+                const tContent = document.getElementById(`content-${t}`);
+                if(tBtn) {
+                    tBtn.classList.remove('active');
+                    tBtn.style.color = 'var(--text-secondary)';
+                    tBtn.style.borderBottom = 'none';
+                }
+                if(tContent) tContent.style.display = 'none';
+            });
+
+            btn.classList.add('active');
+            btn.style.color = 'var(--primary-color)';
+            btn.style.borderBottom = '2px solid var(--primary-color)';
+            document.getElementById(`content-${tab}`).style.display = 'block';
+            if (tab === 'public' || tab === 'private') {
+                currentApiMode = tab;
+            }
+        });
+    });
 
     settingsBtn.addEventListener('click', async () => {
         if (statusEl) {
@@ -457,42 +498,7 @@ function setupSettingsModal() {
             statusEl.style.color = 'var(--text-secondary)';
         }
         modal.classList.remove('hidden');
-        
-        const tabPublic = document.getElementById('tab-public');
-        const tabPrivate = document.getElementById('tab-private');
-        const contentPublic = document.getElementById('content-public');
-        const contentPrivate = document.getElementById('content-private');
-        
-        const tabTelegram = document.getElementById('tab-telegram');
-        const contentTelegram = document.getElementById('content-telegram');
 
-        const tabs = ['public', 'private', 'telegram', 'security'];
-        tabs.forEach(tab => {
-            const btn = document.getElementById(`tab-${tab}`);
-            if(btn) {
-                btn.addEventListener('click', () => {
-                    tabs.forEach(t => {
-                        const tBtn = document.getElementById(`tab-${t}`);
-                        const tContent = document.getElementById(`content-${t}`);
-                        if(tBtn) {
-                            tBtn.classList.remove('active');
-                            tBtn.style.color = 'var(--text-secondary)';
-                            tBtn.style.borderBottom = 'none';
-                        }
-                        if(tContent) tContent.style.display = 'none';
-                    });
-                    
-                    btn.classList.add('active');
-                    btn.style.color = 'var(--primary-color)';
-                    btn.style.borderBottom = '2px solid var(--primary-color)';
-                    document.getElementById(`content-${tab}`).style.display = 'block';
-                    if (tab === 'public' || tab === 'private') {
-                        currentApiMode = tab;
-                    }
-                });
-            }
-        });
-        
         try {
             const res = await customFetch('/api/settings', { cache: 'no-cache' });
             const data = await res.json();

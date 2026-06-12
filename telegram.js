@@ -4,67 +4,72 @@ const dbModule = require('./db');
 let bot = null;
 let activeChatId = null;
 
+// Escape user-generated content for Telegram's HTML parse mode.
+// (Markdown mode breaks on review text containing *, _, [ etc. — HTML is robust.)
+const escapeHtml = (text) => {
+  if (text === null || text === undefined) return '';
+  return String(text)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+};
+
+// Telegram messages are capped at 4096 chars; trim long review bodies
+const truncate = (text, max) => {
+  const s = String(text === null || text === undefined ? '' : text);
+  return s.length > max ? s.slice(0, max) + '…' : s;
+};
+
 const setupListeners = () => {
   if (!bot) return;
 
-  // Handle /apps command
+  bot.on('polling_error', (err) => {
+    console.error('Telegram polling error:', err.message || err);
+  });
+
+  // Handle /start and /apps commands
   bot.onText(/\/(start|apps)/, async (msg) => {
     const chatId = msg.chat.id;
-    if (chatId.toString() !== activeChatId) return;
+    if (String(chatId) !== activeChatId) return;
 
     const { fetchDeveloperApps } = require('./scraper');
-    bot.sendMessage(chatId, 'Fetching apps data...');
-    
+    bot.sendMessage(chatId, 'Fetching apps data...').catch(() => {});
+
     try {
       const apps = await fetchDeveloperApps();
-      if (apps.length === 0) {
-        bot.sendMessage(chatId, 'No apps found.');
-        return;
-      }
-
-      let text = `*Apps Rating Summary*\n\n`;
-      const keyboard = [];
-
-      apps.forEach(app => {
-        text += `*${app.name}*\nRating: ${app.rating.toFixed(1)}/5 (${app.ratingCount} reviews)\n\n`;
-        keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
-      });
-
-      bot.sendMessage(chatId, text, {
-        parse_mode: 'Markdown',
-        reply_markup: {
-          inline_keyboard: keyboard
-        }
-      });
+      await sendSummaryMessage(apps);
     } catch (err) {
-      bot.sendMessage(chatId, 'Error fetching apps data.');
+      console.error('Error handling /apps command:', err);
+      bot.sendMessage(chatId, 'Error fetching apps data.').catch(() => {});
     }
   });
 
   // Handle button clicks
   bot.on('callback_query', async (query) => {
     const chatId = query.message.chat.id;
-    if (chatId.toString() !== activeChatId) return;
+    if (String(chatId) !== activeChatId) return;
 
-    const data = query.data;
+    const data = query.data || '';
     if (data.startsWith('app_')) {
-      const appId = data.split('_')[1];
-      
+      const appId = data.substring(4);
+
       // Fetch latest reviews from DB
       dbModule.all('SELECT * FROM reviews WHERE app_id = ? ORDER BY updated_at DESC LIMIT 5', [appId], (err, rows) => {
         if (err || !rows || rows.length === 0) {
-          bot.answerCallbackQuery(query.id, { text: 'No reviews found in the local database.' });
-          bot.sendMessage(chatId, 'No reviews found in the local database for this app.');
+          bot.answerCallbackQuery(query.id, { text: 'No reviews found in the local database.' }).catch(() => {});
+          bot.sendMessage(chatId, 'No reviews found in the local database for this app.').catch(() => {});
           return;
         }
 
-        let reviewText = `*Latest 5 Reviews:*\n\n`;
+        let reviewText = `<b>Latest 5 Reviews:</b>\n\n`;
         rows.forEach(r => {
-          reviewText += `Rating: ${r.rating}/5\n*${r.title}* by _${r.author_name}_\n${r.content}\n\n`;
+          reviewText += `Rating: ${r.rating}/5\n<b>${escapeHtml(truncate(r.title, 300))}</b> by <i>${escapeHtml(r.author_name)}</i>\n${escapeHtml(truncate(r.content, 600))}\n\n`;
         });
 
-        bot.answerCallbackQuery(query.id);
-        bot.sendMessage(chatId, reviewText, { parse_mode: 'Markdown' });
+        bot.answerCallbackQuery(query.id).catch(() => {});
+        bot.sendMessage(chatId, reviewText, { parse_mode: 'HTML' }).catch((e) => {
+          console.error('Error sending reviews message:', e.message || e);
+        });
       });
     }
   });
@@ -81,9 +86,9 @@ const initBot = async (token, chatId) => {
     bot = null;
   }
 
-  activeChatId = chatId;
+  activeChatId = chatId ? String(chatId).trim() : null;
 
-  if (token && chatId) {
+  if (token && activeChatId) {
     try {
       bot = new TelegramBot(token, { polling: true });
       setupListeners();
@@ -101,6 +106,7 @@ const initBot = async (token, chatId) => {
 };
 
 const getFlagEmoji = (countryCode) => {
+  if (!countryCode || !/^[a-z]{2}$/i.test(countryCode)) return '';
   const codePoints = countryCode
     .toUpperCase()
     .split('')
@@ -111,17 +117,18 @@ const getFlagEmoji = (countryCode) => {
 const sendReviewNotification = async (review, appName, iconUrl, countryCode) => {
   if (!bot || !activeChatId) return;
 
-  const stars = '★'.repeat(review.rating) + '☆'.repeat(5 - review.rating);
+  const rating = Math.max(0, Math.min(5, review.rating || 0));
+  const stars = '★'.repeat(rating) + '☆'.repeat(5 - rating);
   const flag = countryCode ? `${getFlagEmoji(countryCode)} (${countryCode.toUpperCase()}) ` : '';
-  
-  let message = `*New Review for ${appName}*\n`;
+
+  let message = `<b>New Review for ${escapeHtml(appName)}</b>\n`;
   message += `${flag}${stars}\n`;
-  message += `*Author:* ${review.author_name}\n`;
-  message += `*Version:* ${review.version}\n\n`;
-  message += `*${review.title}*\n${review.content}`;
+  message += `<b>Author:</b> ${escapeHtml(review.author_name)}\n`;
+  message += `<b>Version:</b> ${escapeHtml(review.version)}\n\n`;
+  message += `<b>${escapeHtml(truncate(review.title, 300))}</b>\n${escapeHtml(truncate(review.content, 3000))}`;
 
   try {
-    const options = { parse_mode: 'Markdown' };
+    const options = { parse_mode: 'HTML' };
     if (iconUrl) {
       options.link_preview_options = {
         url: iconUrl,
@@ -129,7 +136,7 @@ const sendReviewNotification = async (review, appName, iconUrl, countryCode) => 
         show_above_text: true
       };
     }
-    
+
     await bot.sendMessage(activeChatId, message, options);
     console.log(`Sent Telegram notification for review ${review.id}`);
   } catch (error) {
@@ -140,25 +147,26 @@ const sendReviewNotification = async (review, appName, iconUrl, countryCode) => 
 const sendSummaryMessage = async (apps) => {
   if (!bot || !activeChatId) return false;
 
-  let message = `*Apps Rating Summary*\n\n`;
+  let message = `<b>Apps Rating Summary</b>\n\n`;
   const keyboard = [];
-  
+
   if (apps.length === 0) {
     message += `No apps found.`;
   } else {
     apps.forEach(app => {
-      const totalCount = app.ratingsByCountry.reduce((sum, r) => sum + r.count, 0);
-      const totalRatingPoints = app.ratingsByCountry.reduce((sum, r) => sum + (r.rating * r.count), 0);
+      const ratings = app.ratingsByCountry || [];
+      const totalCount = ratings.reduce((sum, r) => sum + r.count, 0);
+      const totalRatingPoints = ratings.reduce((sum, r) => sum + (r.rating * r.count), 0);
       const avgRating = totalCount > 0 ? (totalRatingPoints / totalCount).toFixed(1) : '0.0';
       const unpublishedTag = app.isPublished === false ? ' [Not in Store]' : '';
-      message += `*${app.name}*${unpublishedTag}\nRating: ${avgRating}/5 (${totalCount} reviews)\n\n`;
+      message += `<b>${escapeHtml(app.name)}</b>${escapeHtml(unpublishedTag)}\nRating: ${avgRating}/5 (${totalCount} reviews)\n\n`;
       keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
     });
   }
 
   try {
-    await bot.sendMessage(activeChatId, message, { 
-        parse_mode: 'Markdown',
+    await bot.sendMessage(activeChatId, message, {
+        parse_mode: 'HTML',
         reply_markup: {
             inline_keyboard: keyboard
         }
