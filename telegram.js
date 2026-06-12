@@ -148,10 +148,18 @@ const sendSummaryMessage = async (apps) => {
   if (apps.length === 0) {
     message += `No apps found.`;
   } else {
-    apps.forEach(app => {
+    const MAX_APPS = 10;
+    const displayApps = apps.slice(0, MAX_APPS);
+    
+    displayApps.forEach(app => {
       message += `*${app.name}*\nRating: ${app.rating.toFixed(1)}/5 (${app.ratingCount} reviews)\n\n`;
       keyboard.push([{ text: `View Reviews: ${app.name}`, callback_data: `app_${app.id}` }]);
     });
+    
+    if (apps.length > MAX_APPS) {
+      const remaining = apps.length - MAX_APPS;
+      message += `_...and ${remaining} more apps. View the full list on your web dashboard._`;
+    }
   }
 
   try {
