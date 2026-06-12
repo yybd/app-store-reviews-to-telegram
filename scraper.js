@@ -6,7 +6,11 @@ const STORE_COUNTRY = process.env.STORE_COUNTRY || 'us';
 // Fetch all Mac apps for the developer
 async function fetchDeveloperApps() {
   try {
-    const devTerm = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM || 'Your Developer Name';
+    const devTerm = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM;
+    if (!devTerm || devTerm.trim() === '' || devTerm === 'Your Developer Name') {
+      return [];
+    }
+    
     const encodedTerm = encodeURIComponent(devTerm.trim()).replace(/%20/g, '+');
     const url = `https://itunes.apple.com/search?term=${encodedTerm}&entity=macSoftware`;
     const response = await fetch(url);

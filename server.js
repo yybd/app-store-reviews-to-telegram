@@ -32,9 +32,12 @@ app.get('/api/config', async (req, res) => {
   const { fetchDeveloperApps } = require('./scraper');
   try {
     const apps = await fetchDeveloperApps();
-    const developerName = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM || 'Your Developer Name';
+    let developerName = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM;
+    if (developerName === 'Your Developer Name') {
+      developerName = '';
+    }
     res.json({ 
-      developerName, 
+      developerName: developerName || '', 
       connected: apps.length > 0,
       appsCount: apps.length,
       telegramConnected: isBotConnected()
