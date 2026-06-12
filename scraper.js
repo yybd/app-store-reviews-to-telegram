@@ -91,8 +91,8 @@ async function fetchAppReviews(appId, storeCountry) {
 }
 
 // Main scraping loop
-async function scrapeReviews() {
-  console.log('Starting review scrape cycle...');
+async function scrapeReviews(isInitial = false) {
+  console.log(`Starting review scrape cycle... (Initial: ${isInitial})`);
   const apps = await fetchDeveloperApps();
   const storeCountryStr = await db.getSetting('store_country') || process.env.STORE_COUNTRY || 'us';
   const storeCountries = storeCountryStr.split(',').map(c => c.trim());
@@ -123,8 +123,8 @@ async function scrapeReviews() {
               (insertErr) => {
                 if (insertErr) {
                   console.error('Error inserting review:', insertErr);
-                } else {
-                  // Send notification only if successfully saved to avoid spam
+                } else if (!isInitial) {
+                  // Send notification only if successfully saved and it's not the initial scrape to avoid spam
                   sendReviewNotification(review, app.name, app.iconUrl, storeCountry);
                 }
               }

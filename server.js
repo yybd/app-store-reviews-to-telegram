@@ -81,8 +81,8 @@ app.post('/api/settings', async (req, res) => {
         // Clear reviews because the developer or country changed
         db.run('DELETE FROM reviews', (err) => {
             if (!err) {
-              // Trigger a fresh scrape in the background
-              scrapeReviews();
+              // Trigger a fresh scrape in the background without sending initial notifications
+              scrapeReviews(true);
             }
         });
     }
@@ -117,7 +117,40 @@ app.get('/api/apps', async (req, res) => {
   const { fetchDeveloperApps } = require('./scraper');
   try {
     const apps = await fetchDeveloperApps();
-    res.json(apps);
+    
+    // Augment with actual review counts from our database
+    db.all('SELECT app_id, country, COUNT(*) as actual_count FROM reviews GROUP BY app_id, country', (err, rows) => {
+      if (err) {
+        return res.json(apps);
+      }
+      
+      const countsMap = {};
+      rows.forEach(row => {
+        if (!countsMap[row.app_id]) countsMap[row.app_id] = {};
+        countsMap[row.app_id][row.country] = row.actual_count;
+      });
+
+      apps.forEach(app => {
+        const dbCounts = countsMap[app.id] || {};
+        
+        // Update existing countries
+        app.ratingsByCountry.forEach(r => {
+           const dbCount = dbCounts[r.country] || 0;
+           r.count = Math.max(r.count, dbCount);
+           delete dbCounts[r.country]; // Mark as processed
+        });
+        
+        // Add remaining countries from DB that iTunes Search API missed
+        Object.keys(dbCounts).forEach(country => {
+            app.ratingsByCountry.push({
+                country: country,
+                rating: 0, // We don't have the average rating from API
+                count: dbCounts[country]
+            });
+        });
+      });
+      res.json(apps);
+    });
   } catch (err) {
     res.status(500).json({ error: 'Failed to retrieve apps' });
   }

@@ -121,11 +121,18 @@ const sendReviewNotification = async (review, appName, iconUrl, countryCode) => 
   message += `*${review.title}*\n${review.content}`;
 
   try {
+    const options = { parse_mode: 'Markdown' };
     if (iconUrl) {
-      await bot.sendPhoto(activeChatId, iconUrl, { caption: message, parse_mode: 'Markdown' });
-    } else {
-      await bot.sendMessage(activeChatId, message, { parse_mode: 'Markdown' });
+      options.link_preview_options = {
+        url: iconUrl,
+        prefer_small_media: true
+      };
+      
+      // Add an invisible link to the message so older clients also render the preview
+      message += `\n[​](${iconUrl})`;
     }
+    
+    await bot.sendMessage(activeChatId, message, options);
     console.log(`Sent Telegram notification for review ${review.id}`);
   } catch (error) {
     console.error('Error sending Telegram notification:', error);
