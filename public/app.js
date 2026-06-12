@@ -7,21 +7,21 @@ function setupTestButton() {
     const testBtn = document.getElementById('test-telegram-btn');
     if (!testBtn) return;
     
-    testBtn.addEventListener('click', async () => {
+        testBtn.addEventListener('click', async () => {
         const originalText = testBtn.textContent;
-        testBtn.textContent = 'Sending...';
+        testBtn.textContent = 'שולח...';
         testBtn.disabled = true;
         testBtn.style.opacity = '0.7';
         
         try {
-            const res = await fetch('/api/test-telegram', { method: 'POST' });
+            const res = await fetch('/api/send-apps-summary', { method: 'POST' });
             if (res.ok) {
-                testBtn.textContent = 'Sent! ✅';
+                testBtn.textContent = 'נשלח בהצלחה! ✅';
             } else {
-                testBtn.textContent = 'Failed ❌';
+                testBtn.textContent = 'שגיאה בשליחה ❌';
             }
         } catch (error) {
-            testBtn.textContent = 'Error ❌';
+            testBtn.textContent = 'שגיאה ❌';
         }
         
         setTimeout(() => {

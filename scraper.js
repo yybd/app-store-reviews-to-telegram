@@ -15,7 +15,9 @@ async function fetchDeveloperApps() {
     
     return data.results.map(app => ({
       id: app.trackId,
-      name: app.trackName
+      name: app.trackName,
+      rating: app.averageUserRating || 0,
+      ratingCount: app.userRatingCount || 0
     }));
   } catch (error) {
     console.error('Error fetching developer apps:', error);
@@ -92,4 +94,4 @@ async function scrapeReviews() {
   }
 }
 
-module.exports = { scrapeReviews };
+module.exports = { scrapeReviews, fetchDeveloperApps };

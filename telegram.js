@@ -35,4 +35,28 @@ ${review.content}
   }
 };
 
-module.exports = { sendReviewNotification };
+const sendSummaryMessage = async (apps) => {
+  if (!bot || !chatId) return false;
+
+  let message = `📊 *Apps Rating Summary*\n\n`;
+  
+  if (apps.length === 0) {
+    message += `No apps found.`;
+  } else {
+    apps.forEach(app => {
+      const stars = app.rating > 0 ? '⭐'.repeat(Math.round(app.rating)) + '☆'.repeat(5 - Math.round(app.rating)) : 'No ratings yet';
+      message += `📱 *${app.name}*\n${stars} (${app.rating} avg from ${app.ratingCount} reviews)\n\n`;
+    });
+  }
+
+  try {
+    await bot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+    console.log('Sent Telegram summary notification.');
+    return true;
+  } catch (error) {
+    console.error('Error sending Telegram summary:', error);
+    return false;
+  }
+};
+
+module.exports = { sendReviewNotification, sendSummaryMessage };
