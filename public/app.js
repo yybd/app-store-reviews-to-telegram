@@ -264,12 +264,14 @@ function setupSettingsModal() {
         }
         modal.classList.remove('hidden');
         
-        try {
+try {
             const res = await fetch('/api/settings');
             const data = await res.json();
             if (tokenInput) tokenInput.value = data.telegramToken || '';
             if (chatIdInput) chatIdInput.value = data.telegramChatId || '';
             if (developerNameInput) developerNameInput.value = data.developerName || '';
+            const countryInput = document.getElementById('store-country');
+            if (countryInput && data.storeCountry) countryInput.value = data.storeCountry;
             if (statusEl) statusEl.textContent = '';
         } catch (e) {
             if (statusEl) {
@@ -294,6 +296,8 @@ function setupSettingsModal() {
         saveBtn.textContent = 'Saving...';
         if (statusEl) statusEl.textContent = '';
         
+        const countryInput = document.getElementById('store-country');
+
         try {
             const res = await fetch('/api/settings', {
                 method: 'POST',
@@ -301,7 +305,8 @@ function setupSettingsModal() {
                 body: JSON.stringify({
                     telegramToken: tokenInput ? tokenInput.value.trim() : '',
                     telegramChatId: chatIdInput ? chatIdInput.value.trim() : '',
-                    developerName: developerNameInput ? developerNameInput.value.trim() : ''
+                    developerName: developerNameInput ? developerNameInput.value.trim() : '',
+                    storeCountry: countryInput ? countryInput.value.trim() : 'us'
                 })
             });
             

@@ -53,26 +53,29 @@ app.get('/api/settings', async (req, res) => {
     const token = await db.getSetting('telegram_token') || process.env.TELEGRAM_BOT_TOKEN || '';
     const chatId = await db.getSetting('telegram_chat_id') || process.env.TELEGRAM_CHAT_ID || '';
     const developerName = await db.getSetting('developer_name') || process.env.DEVELOPER_TERM || '';
-    res.json({ telegramToken: token, telegramChatId: chatId, developerName });
+    const storeCountry = await db.getSetting('store_country') || process.env.STORE_COUNTRY || 'us';
+    res.json({ telegramToken: token, telegramChatId: chatId, developerName, storeCountry });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch settings' });
   }
 });
 
 app.post('/api/settings', async (req, res) => {
-  const { telegramToken, telegramChatId, developerName } = req.body;
+  const { telegramToken, telegramChatId, developerName, storeCountry } = req.body;
   try {
     const oldDevName = await db.getSetting('developer_name') || '';
+    const oldStoreCountry = await db.getSetting('store_country') || 'us';
 
     await db.setSetting('telegram_token', telegramToken || '');
     await db.setSetting('telegram_chat_id', telegramChatId || '');
     await db.setSetting('developer_name', developerName || '');
+    await db.setSetting('store_country', storeCountry || 'us');
     
     // Re-initialize bot
     await initBot(telegramToken, telegramChatId);
 
-    if (developerName !== oldDevName) {
-        // Clear reviews because the developer changed
+    if (developerName !== oldDevName || storeCountry !== oldStoreCountry) {
+        // Clear reviews because the developer or country changed
         db.run('DELETE FROM reviews', (err) => {
             if (!err) {
               // Trigger a fresh scrape in the background

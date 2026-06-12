@@ -1,7 +1,7 @@
 const db = require('./db');
 const { sendReviewNotification } = require('./telegram');
 
-const STORE_COUNTRY = process.env.STORE_COUNTRY || 'us';
+
 
 // Fetch all Mac apps for the developer
 async function fetchDeveloperApps() {
@@ -37,9 +37,9 @@ async function fetchDeveloperApps() {
 }
 
 // Fetch reviews for a specific app
-async function fetchAppReviews(appId) {
+async function fetchAppReviews(appId, storeCountry) {
   try {
-    const url = `https://itunes.apple.com/${STORE_COUNTRY}/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`;
+    const url = `https://itunes.apple.com/${storeCountry}/rss/customerreviews/id=${appId}/sortBy=mostRecent/json`;
     const response = await fetch(url);
     const data = await response.json();
     
@@ -67,10 +67,11 @@ async function fetchAppReviews(appId) {
 async function scrapeReviews() {
   console.log('Starting review scrape cycle...');
   const apps = await fetchDeveloperApps();
-  console.log(`Found ${apps.length} apps for developer.`);
+  const storeCountry = await db.getSetting('store_country') || process.env.STORE_COUNTRY || 'us';
+  console.log(`Found ${apps.length} apps for developer. Using store country: ${storeCountry}`);
 
   for (const app of apps) {
-    const reviews = await fetchAppReviews(app.id);
+    const reviews = await fetchAppReviews(app.id, storeCountry);
     console.log(`Fetched ${reviews.length} reviews for ${app.name} (${app.id})`);
     
     for (const review of reviews) {
