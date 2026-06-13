@@ -122,16 +122,16 @@ async function fetchConfig() {
             let statusHtml = '';
             
             if (config.connected) {
-                statusHtml += `<span style="color: #4ade80;" title="App Store Connected">●</span> Store (${config.appsCount} apps)`;
+                statusHtml += `<span style="color: var(--success);" title="App Store Connected">●</span> Store (${config.appsCount} apps)`;
             } else {
-                statusHtml += `<span style="color: #ff5e5e;" title="App Store Disconnected">●</span> Store (Check DEVELOPER_TERM)`;
+                statusHtml += `<span style="color: var(--danger);" title="App Store Disconnected">●</span> Store (Check DEVELOPER_TERM)`;
             }
             
-            statusHtml += `<span style="margin: 0 6px; color: #cbd5e1;">|</span>`;
+            statusHtml += `<span style="margin: 0 6px; color: var(--text-tertiary);">|</span>`;
             
             const testBtn = document.getElementById('test-telegram-btn');
             if (config.telegramConnected) {
-                statusHtml += `<span style="color: #4ade80;" title="Telegram Connected">●</span> Telegram`;
+                statusHtml += `<span style="color: var(--success);" title="Telegram Connected">●</span> Telegram`;
                 if (testBtn) {
                     testBtn.disabled = false;
                     testBtn.style.opacity = '1';
@@ -139,7 +139,7 @@ async function fetchConfig() {
                     testBtn.title = 'Send an instant summary to Telegram';
                 }
             } else {
-                statusHtml += `<span style="color: #ff5e5e;" title="Telegram Disconnected">●</span> Telegram`;
+                statusHtml += `<span style="color: var(--danger);" title="Telegram Disconnected">●</span> Telegram`;
                 if (testBtn) {
                     testBtn.disabled = true;
                     testBtn.style.opacity = '0.5';
@@ -159,8 +159,8 @@ async function fetchConfig() {
                 }
             }
             if (loggedInUser) {
-                statusHtml += `<span style="margin: 0 6px; color: #cbd5e1;">|</span>`;
-                statusHtml += `<span style="color: #4ade80;" title="Logged in">●</span> 👤 ${escapeHTML(loggedInUser)}`;
+                statusHtml += `<span style="margin: 0 6px; color: var(--text-tertiary);">|</span>`;
+                statusHtml += `<span style="color: var(--success);" title="Logged in">●</span> ${escapeHTML(loggedInUser)}`;
                 if (logoutBtn) {
                     logoutBtn.classList.remove('hidden');
                     logoutBtn.title = `Logged in as ${loggedInUser} — click to log out`;
@@ -178,7 +178,7 @@ async function fetchConfig() {
         const statusEl = document.getElementById('connection-status');
         if (statusEl) {
             statusEl.classList.remove('hidden');
-            statusEl.innerHTML = `<span style="color: #ff5e5e;">●</span> Failed to connect to server.`;
+            statusEl.innerHTML = `<span style="color: var(--danger);">●</span> Failed to connect to server.`;
         }
     }
 }
@@ -312,7 +312,7 @@ async function fetchApps() {
                 <div style="margin-bottom: 12px; border-top: 1px solid var(--card-border); padding-top: 8px;">
                     ${statsHtml}
                 </div>
-                <div class="app-downloads-row" id="downloads-${escapeHTML(app.id)}" style="display: none; font-size: 0.9rem; margin-bottom: 12px; padding: 8px 10px; background: rgba(127,127,127,0.08); border-radius: 8px;"></div>
+                <div class="app-downloads-row" id="downloads-${escapeHTML(app.id)}" style="display: none; font-size: 0.85rem; margin-bottom: 12px; padding: 8px 10px; background: var(--bg-secondary); border-radius: 8px;"></div>
                 <button class="view-reviews-btn" data-id="${escapeHTML(app.id)}" data-name="${escapeHTML(app.name)}">View Reviews</button>
             `;
             
@@ -336,7 +336,7 @@ async function fetchApps() {
         // When auth is required the login modal is already shown; the post-login
         // flow re-fetches, so don't spam the server with retries
         if (error.message === 'Authentication required') return;
-        loadingEl.innerHTML = `<p style="color: #ff5e5e;">Error loading apps. Retrying soon...</p>`;
+        loadingEl.innerHTML = `<p style="color: var(--danger);">Error loading apps. Retrying soon...</p>`;
         setTimeout(fetchApps, 10000);
     }
 }
@@ -356,7 +356,7 @@ async function fetchDownloads() {
         Object.entries(data.downloads).forEach(([appId, count]) => {
             const el = document.getElementById('downloads-' + appId);
             if (!el) return;
-            el.innerHTML = `<span title="First-time downloads in the last ${period} days, via App Store Connect sales reports">⬇️ <strong>${Number(count).toLocaleString()}</strong> downloads <span style="color: var(--text-secondary); font-weight: 400;">· ${period}d</span></span>`;
+            el.innerHTML = `<span title="First-time downloads in the last ${period} days, via App Store Connect sales reports"><strong>${Number(count).toLocaleString()}</strong> downloads <span style="color: var(--text-secondary); font-weight: 400;">· ${period}d</span></span>`;
             el.style.display = 'block';
         });
     } catch (error) {
@@ -421,7 +421,7 @@ async function openReviewsModal(appId, appName) {
     } catch (error) {
         console.error('Error fetching reviews:', error);
         loadingEl.classList.add('hidden');
-        emptyEl.innerHTML = `<h3 style="color: #ff5e5e;">Error loading reviews</h3>`;
+        emptyEl.innerHTML = `<h3 style="color: var(--danger);">Error loading reviews</h3>`;
         emptyEl.classList.remove('hidden');
     }
 }
@@ -755,7 +755,7 @@ function setupSettingsModal() {
         } catch (e) {
             if (statusEl) {
                 statusEl.textContent = 'Error loading settings';
-                statusEl.style.color = '#ff5e5e';
+                statusEl.style.color = 'var(--danger)';
             }
             if (container && container.children.length === 0) addStoreSelect('us');
         }
@@ -782,7 +782,7 @@ function setupSettingsModal() {
         if (currentApiMode === 'public' && storeCountries.length !== countrySelects.length) {
             if (statusEl) {
                 statusEl.textContent = 'Please do not select the same App Store region more than once.';
-                statusEl.style.color = '#ff5e5e';
+                statusEl.style.color = 'var(--danger)';
             }
             saveBtn.disabled = false;
             saveBtn.textContent = 'Save';
@@ -822,8 +822,8 @@ function setupSettingsModal() {
             const data = await res.json();
             if (data.success) {
                 if (statusEl) {
-                    statusEl.textContent = 'Saved successfully! ✅';
-                    statusEl.style.color = '#4ade80';
+                    statusEl.textContent = 'Saved successfully';
+                    statusEl.style.color = 'var(--success)';
                 }
                 fetchConfig();
                 // Trigger fetchApps to update grid if developer name changed
@@ -841,7 +841,7 @@ function setupSettingsModal() {
         } catch (e) {
             if (statusEl) {
                 statusEl.textContent = e.message;
-                statusEl.style.color = '#ff5e5e';
+                statusEl.style.color = 'var(--danger)';
             }
         } finally {
             saveBtn.disabled = false;

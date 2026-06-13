@@ -1,11 +1,5 @@
 <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#6366f1"/>
-      <stop offset="100%" stop-color="#4f46e5"/>
-    </linearGradient>
-  </defs>
-  <rect width="32" height="32" rx="7" fill="url(#bg)"/>
+  <rect width="32" height="32" rx="7" fill="#18181b"/>
   <path d="M16 6.5 L18.2 12.9 L25 13.1 L19.6 17.2 L21.6 23.7 L16 19.8 L10.4 23.7 L12.4 17.2 L7 13.1 L13.8 12.9 Z"
-        fill="#f59e0b"/>
+        fill="#d4a13a"/>
 </svg>

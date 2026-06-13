@@ -5,17 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mac App Store Reviews</title>
     <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="background-blobs">
-        <div class="blob blob-1"></div>
-        <div class="blob blob-2"></div>
-    </div>
-    
     <div class="container">
         <header>
             <div class="header-content">
@@ -77,8 +69,8 @@
 
                 <!-- Public API Tab Content -->
                 <div id="content-public" class="tab-content">
-                    <div style="font-size: 0.8rem; color: #ff9800; background: rgba(255, 152, 0, 0.1); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255, 152, 0, 0.2);">
-                        ⚠️ <strong>Warning:</strong> Apple's Public RSS feeds are unofficial and often unreliable. They frequently block or return empty review data for massive apps (like TikTok, WhatsApp). For accurate and stable data, it is highly recommended to use the <strong>Private API</strong> tab instead.
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); background: var(--bg-secondary); padding: 12px; border-radius: 8px; margin-bottom: 16px; border: 1px solid var(--card-border); line-height: 1.55;">
+                        <strong>Note:</strong> Apple's Public RSS feeds are unofficial and often unreliable. They frequently block or return empty review data for massive apps (like TikTok, WhatsApp). For accurate and stable data, the <strong>Private API</strong> tab is recommended.
                     </div>
                     <div class="form-group">
                         <label for="developer-name">Developer Name</label>
@@ -120,10 +112,10 @@
                         <input type="text" id="asc-vendor-number" placeholder="e.g. 87654321">
                     </div>
                     <div class="telegram-instructions">
-                        <strong>📥 Show download counts (optional)</strong><br>
+                        <strong>Show download counts (optional)</strong><br>
                         Leave this empty to keep everything exactly as it is now — only reviews are tracked. Add your <strong>Vendor Number</strong> to also show <strong>first-time downloads from the last 30 days</strong> on each app card.<br><br>
-                        <strong>🔑 Required access level:</strong> the App Store Connect key configured above must have an <strong>Admin</strong>, <strong>Finance</strong>, or <strong>Sales</strong> role. A <strong>Developer</strong> or <strong>App Manager</strong> key still works for reviews, but cannot read sales reports — so downloads simply won't appear (nothing else breaks).<br><br>
-                        <strong>🔎 How to find your Vendor Number:</strong>
+                        <strong>Required access level:</strong> the App Store Connect key configured above must have an <strong>Admin</strong>, <strong>Finance</strong>, or <strong>Sales</strong> role. A <strong>Developer</strong> or <strong>App Manager</strong> key still works for reviews, but cannot read sales reports — so downloads simply won't appear (nothing else breaks).<br><br>
+                        <strong>How to find your Vendor Number:</strong>
                         <ol style="margin: 8px 0 0; padding-left: 20px;">
                             <li>Sign in to <a href="https://appstoreconnect.apple.com/" target="_blank" rel="noopener" style="color: var(--accent);">App Store Connect</a>.</li>
                             <li>Open <strong>Payments and Financial Reports</strong> from the main menu.</li>
@@ -149,7 +141,7 @@
                     </div>
                     
                     <div class="telegram-instructions">
-                        <strong>💡 How to use the Telegram Bot:</strong><br>
+                        <strong>How to use the Telegram Bot:</strong><br>
                         Once connected, you will receive notifications for new reviews automatically.<br><br>
                         <strong>Interactive Commands:</strong><br>
                         Send <code>/start</code> or <code>/apps</code> to the bot. It will reply with a list of your apps.<br>
@@ -170,8 +162,8 @@
                         <label for="dashboard-pass">Password</label>
                         <input type="password" id="dashboard-pass" placeholder="Enter password" autocomplete="new-password">
                     </div>
-                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; background: rgba(255,255,255,0.05); padding: 12px; border-radius: 8px;">
-                        🔒 <strong>Note:</strong> Your credentials will be saved locally to <code>auth.json</code> in the project directory. If you forget your password, you can simply open this file on your server to recover it, or delete it to remove the password protection entirely.
+                    <div style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 12px; background: var(--bg-secondary); padding: 12px; border-radius: 8px; line-height: 1.55;">
+                        <strong>Note:</strong> Your credentials will be saved locally to <code>auth.json</code> in the project directory. If you forget your password, you can simply open this file on your server to recover it, or delete it to remove the password protection entirely.
                     </div>
                 </div>
 
@@ -223,7 +215,7 @@
     <div id="login-modal" class="modal hidden">
         <div class="modal-content" style="max-width: 400px; text-align: center;">
             <div class="modal-header" style="justify-content: center;">
-                <h2>🔒 Authentication Required</h2>
+                <h2>Authentication Required</h2>
             </div>
             <div class="modal-body" style="padding-top: 10px;">
                 <p style="color: var(--text-secondary); margin-bottom: 20px;">Please log in to access the Store Reviews Dashboard.</p>
