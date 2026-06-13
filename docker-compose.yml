@@ -1,0 +1,19 @@
+services:
+  app:
+    build: .
+    image: app-store-reviews-to-telegram
+    container_name: app-store-reviews-to-telegram
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      # Persists the SQLite database (reviews.sqlite) and auth.json across
+      # restarts and rebuilds. Back up this folder to keep your data.
+      - ./data:/app/data
+    environment:
+      - PORT=3000
+    # Every setting (Telegram token, App Store Connect key, vendor number, etc.)
+    # is configured from the web dashboard and stored in ./data/reviews.sqlite.
+    # The .env file is only an optional fallback — uncomment to use it:
+    # env_file:
+    #   - .env

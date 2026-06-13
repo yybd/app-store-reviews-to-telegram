@@ -1,4 +1,4 @@
-# App Store (Apple) Reviews & Downloads Action + Telegram Bot
+# App Store Reviews to Telegram
 
 This project is a complete **Web Dashboard and Telegram Bot** designed to track Mac/iOS App Store **reviews and downloads** for a specific developer. It automatically scrapes Apple's servers for your apps, stores reviews in a local database (SQLite), provides a beautiful Web Dashboard, and keeps you updated via Telegram notifications. With the optional **Private API** + Vendor Number, it also reports each app's **first-time downloads from the last 30 days** — shown both on the dashboard and in the Telegram summary.
 
@@ -79,15 +79,30 @@ The project includes a sleek, modern web interface accessible from your browser 
 ## 🛠 Setup Instructions
 
 ### 1. Install & Run
-1. Open your terminal in the project folder and install dependencies:
+
+You can run the project either with **Docker** (recommended for self-hosting) or directly with **Node.js**.
+
+#### Option A — Docker (recommended)
+The repository ships with a `Dockerfile` and `docker-compose.yml`. With [Docker](https://docs.docker.com/get-docker/) installed, run from the project folder:
+```bash
+docker compose up -d --build
+```
+Then open your browser at `http://localhost:3000`.
+- **Persistence**: your database and settings live in the `./data` folder, which is mounted as a volume — they survive restarts and rebuilds. Back up this folder to keep your data.
+- **Change the port**: edit the `ports` mapping in `docker-compose.yml` (e.g. `"8080:3000"`).
+- **Logs & stop**: `docker compose logs -f` to follow logs, `docker compose down` to stop.
+
+#### Option B — Node.js
+1. Make sure you have **Node.js 18 or newer** installed.
+2. Open your terminal in the project folder and install dependencies:
    ```bash
    npm install
    ```
-2. Start the server:
+3. Start the server:
    ```bash
    npm start
    ```
-3. Open your browser and navigate to `http://localhost:3000`.
+4. Open your browser and navigate to `http://localhost:3000`.
 
 ### 2. Configure Telegram (via Web UI)
 1. In the Web Dashboard, click the **Settings** button at the top right, and go to the **Telegram** tab.

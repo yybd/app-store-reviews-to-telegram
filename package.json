@@ -1,7 +1,7 @@
 {
-  "name": "store-reviews-action",
+  "name": "app-store-reviews-to-telegram",
   "version": "1.0.0",
-  "description": "",
+  "description": "Self-hosted web dashboard + Telegram bot that tracks your Apple App Store reviews and downloads.",
   "main": "index.js",
   "scripts": {
     "start": "node server.js"

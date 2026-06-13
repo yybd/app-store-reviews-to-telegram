@@ -1,0 +1,21 @@
+# Never copy the host's node_modules — the native sqlite3 module is built for
+# the image's platform inside the Dockerfile instead.
+node_modules
+npm-debug.log*
+
+# Local data, databases and secrets must not go into the image.
+data
+*.db
+*.sqlite
+.env
+.env.local
+.git
+.gitignore
+.DS_Store
+
+# Not needed at runtime.
+Dockerfile
+docker-compose.yml
+.dockerignore
+Screenshot
+*.md
