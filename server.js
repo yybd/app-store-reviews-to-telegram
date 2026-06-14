@@ -3,7 +3,7 @@ const express = require('express');
 const path = require('path');
 const fs = require('fs');
 const db = require('./db');
-const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, testAscCredentials, fetchDownloadsPrivate, invalidateDownloadsCache, scraperEvents } = require('./scraper');
+const { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, testAscCredentials, fetchDownloadsPrivate, invalidateDownloadsCache, scraperEvents, getLastScrapeAt } = require('./scraper');
 const { initBot, isBotConnected } = require('./telegram');
 
 const app = express();
@@ -84,6 +84,9 @@ const sseSend = (payload) => {
 setInterval(() => sseSend({ type: 'ping' }), 25000);
 
 scraperEvents.on('reviews-updated', (info) => sseSend({ type: 'refresh', ...info }));
+// Push the "last updated" time to open dashboards after every completed cycle,
+// even when no new reviews were saved (so the indicator stays current).
+scraperEvents.on('scrape-complete', (info) => sseSend({ type: 'status', ...info }));
 
 const PORT = process.env.PORT || 3000;
 
@@ -154,7 +157,8 @@ app.get('/api/config', async (req, res) => {
       appsCount: apps.length,
       telegramConnected: isBotConnected(),
       apiMode: await db.getSetting('api_mode') || 'public',
-      authEnabled
+      authEnabled,
+      lastScrapeAt: getLastScrapeAt()
     });
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch developer config', connected: false, telegramConnected: false });

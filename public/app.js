@@ -7,6 +7,10 @@ let activeApiMode = 'public';
 // Whether the Telegram bot is currently connected, kept in sync by fetchConfig()
 let telegramEnabled = false;
 
+// ISO time of the last completed store check, shown by the "last updated"
+// indicator. Updated by fetchConfig() and by the SSE 'status' event.
+let lastUpdatedAt = null;
+
 async function customFetch(url, options = {}) {
     const headers = options.headers || {};
     if (authHeader) {
@@ -84,12 +88,62 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Human-friendly "time ago" for the last-updated indicator. Falls back to an
+// absolute short date once the gap grows beyond a week.
+function formatRelativeTime(iso) {
+    const then = new Date(iso).getTime();
+    if (!Number.isFinite(then)) return '';
+    const sec = Math.max(0, Math.floor((Date.now() - then) / 1000));
+    if (sec < 45) return 'just now';
+    const min = Math.floor(sec / 60);
+    if (min < 1) return 'just now';
+    if (min < 60) return `${min}m ago`;
+    const hr = Math.floor(min / 60);
+    if (hr < 24) return `${hr}h ago`;
+    const day = Math.floor(hr / 24);
+    if (day < 7) return `${day}d ago`;
+    return new Date(iso).toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
+}
+
+// Re-render the indicator text from the stored timestamp (called both when fresh
+// data arrives and on a timer, so "just now" ages to "1m ago" on its own).
+function renderLastUpdated() {
+    const wrap = document.getElementById('last-updated');
+    const textEl = document.getElementById('last-updated-text');
+    if (!wrap || !textEl) return;
+
+    if (!lastUpdatedAt) {
+        wrap.classList.add('hidden');
+        return;
+    }
+
+    const rel = formatRelativeTime(lastUpdatedAt);
+    if (!rel) {
+        wrap.classList.add('hidden');
+        return;
+    }
+    textEl.textContent = `Updated ${rel}`;
+    wrap.title = `Store last checked: ${new Date(lastUpdatedAt).toLocaleString()}`;
+    wrap.classList.remove('hidden');
+}
+
+function setLastUpdated(iso) {
+    if (iso) lastUpdatedAt = iso;
+    renderLastUpdated();
+}
+
+// Tick the relative time so the label stays current without needing new data
+setInterval(renderLastUpdated, 30000);
+
 async function fetchConfig() {
     try {
         const response = await customFetch('/api/config', { cache: 'no-cache' });
         const config = await response.json();
 
         if (config.apiMode) activeApiMode = config.apiMode;
+
+        // Reflect when the store was last checked (null until the first cycle finishes)
+        setLastUpdated(config.lastScrapeAt);
 
         const devNameEl = document.getElementById('developer-name-display');
         if (devNameEl) {
@@ -523,6 +577,10 @@ function connectEventStream() {
             if (msg.type === 'refresh') {
                 fetchConfig();
                 fetchApps();
+            } else if (msg.type === 'status') {
+                // A scrape cycle finished (possibly with no new reviews) — just
+                // refresh the "last updated" time without re-fetching everything
+                setLastUpdated(msg.lastScrapeAt);
             }
         } catch (err) {
             // Ignore malformed frames (e.g. heartbeats are handled by the timestamp above)

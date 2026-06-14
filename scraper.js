@@ -5,8 +5,17 @@ const { EventEmitter } = require('events');
 const zlib = require('zlib');
 
 // Emits 'reviews-updated' whenever a scrape cycle saved new reviews, so the
-// server can push a live refresh to open dashboards (instead of them polling)
+// server can push a live refresh to open dashboards (instead of them polling).
+// Also emits 'scrape-complete' at the end of every successful cycle (even when
+// nothing new was found) so the dashboard can show a "last updated" time.
 const scraperEvents = new EventEmitter();
+
+// ISO timestamp of the last successfully completed scrape cycle (any API mode).
+// Null until the first cycle finishes. Exposed via getLastScrapeAt().
+let lastScrapeAt = null;
+function getLastScrapeAt() {
+    return lastScrapeAt;
+}
 
 // Full ISO 3166-1 alpha-3 -> alpha-2 mapping.
 // App Store Connect reports review territories as alpha-3; iTunes feeds and flag emojis use alpha-2.
@@ -614,38 +623,43 @@ async function doScrape(isInitial) {
 
     const apiMode = await db.getSetting('api_mode') || 'public';
     if (apiMode === 'private') {
-        return scrapeReviewsPrivate(isInitial);
-    }
+        await scrapeReviewsPrivate(isInitial);
+    } else {
+        const apps = await fetchDeveloperApps();
+        const storeCountries = await getStoreCountries();
+        console.log(`Found ${apps.length} apps for developer. Using store countries: ${storeCountries.join(', ')}`);
 
-    const apps = await fetchDeveloperApps();
-    const storeCountries = await getStoreCountries();
-    console.log(`Found ${apps.length} apps for developer. Using store countries: ${storeCountries.join(', ')}`);
+        let newCount = 0;
+        for (const app of apps) {
+            for (const storeCountry of storeCountries) {
+                const reviews = await fetchAppReviews(app.id, storeCountry);
+                console.log(`Fetched ${reviews.length} reviews for ${app.name} (${app.id}) in ${storeCountry}`);
 
-    let newCount = 0;
-    for (const app of apps) {
-        for (const storeCountry of storeCountries) {
-            const reviews = await fetchAppReviews(app.id, storeCountry);
-            console.log(`Fetched ${reviews.length} reviews for ${app.name} (${app.id}) in ${storeCountry}`);
-
-            for (const review of reviews) {
-                try {
-                    const isNew = await saveReviewIfNew(review, app.id, storeCountry);
-                    if (isNew) {
-                        newCount++;
-                        console.log(`New review found for ${app.name} [${storeCountry}]: ${review.title}`);
-                        if (!isInitial && !notificationsMuted) {
-                            await sendReviewNotification(review, app.name, app.iconUrl, storeCountry);
+                for (const review of reviews) {
+                    try {
+                        const isNew = await saveReviewIfNew(review, app.id, storeCountry);
+                        if (isNew) {
+                            newCount++;
+                            console.log(`New review found for ${app.name} [${storeCountry}]: ${review.title}`);
+                            if (!isInitial && !notificationsMuted) {
+                                await sendReviewNotification(review, app.name, app.iconUrl, storeCountry);
+                            }
                         }
+                    } catch (saveErr) {
+                        console.error('Error saving review:', saveErr);
                     }
-                } catch (saveErr) {
-                    console.error('Error saving review:', saveErr);
                 }
             }
         }
+        if (newCount > 0) {
+            scraperEvents.emit('reviews-updated', { count: newCount });
+        }
     }
-    if (newCount > 0) {
-        scraperEvents.emit('reviews-updated', { count: newCount });
-    }
+
+    // The cycle finished without throwing — record it as the last successful check
+    // (regardless of whether new reviews were found) and notify open dashboards.
+    lastScrapeAt = new Date().toISOString();
+    scraperEvents.emit('scrape-complete', { lastScrapeAt });
 }
 
-module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, fetchAppReviews, testAscCredentials, fetchDownloadsPrivate, invalidateDownloadsCache, parseSalesReportTsv, isFirstDownloadProductType, scraperEvents };
+module.exports = { scrapeReviews, resetAndRescrape, fetchDeveloperApps, getDeveloperDisplayName, fetchAppReviews, testAscCredentials, fetchDownloadsPrivate, invalidateDownloadsCache, parseSalesReportTsv, isFirstDownloadProductType, scraperEvents, getLastScrapeAt };

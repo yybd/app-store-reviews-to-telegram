@@ -541,6 +541,22 @@ code {
 .tab-status-badge.on { color: var(--success); }
 .tab-status-badge.off { color: var(--text-tertiary); }
 
+/* --- Last-updated indicator (subtle, muted "last checked the store" time) --- */
+.last-updated {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 8px;
+    font-size: 0.75rem;
+    color: var(--text-tertiary);
+    cursor: default;
+}
+
+.last-updated svg {
+    flex-shrink: 0;
+    opacity: 0.85;
+}
+
 /* --- Responsive --- */
 @media (max-width: 768px) {
     .container {
