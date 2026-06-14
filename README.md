@@ -1,6 +1,10 @@
 # App Store Reviews to Telegram
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 This project is a complete **Web Dashboard and Telegram Bot** designed to track Mac/iOS App Store **reviews and downloads** for a specific developer. It automatically scrapes Apple's servers for your apps, stores reviews in a local database (SQLite), provides a beautiful Web Dashboard, and keeps you updated via Telegram notifications. With the optional **Private API** + Vendor Number, it also reports each app's **first-time downloads from the last 30 days** — shown both on the dashboard and in the Telegram summary.
+
+It's **open source (MIT) and fully self-hosted** — everything runs on your own machine, so your App Store Connect key and Telegram token never leave your server.
 
 ![Dashboard Overview](Screenshot/screenshot1.png)
 
